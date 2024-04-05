@@ -1,18 +1,19 @@
-# set QT_API environment variable
-import os 
-os.environ["QT_API"] = "pyqt5"
-import qtpy
+import os
 
 # qt libraries
+os.environ["QT_API"] = "pyqt5"
+import qtpy
+import pyqtgraph as pg
+
 from qtpy.QtCore import *
 from qtpy.QtWidgets import *
 from qtpy.QtGui import *
 
-from control.processing_handler import ProcessingHandler
-
+# control 
 import control.utils as utils
+import control.utils_config as utils_config
+from control.processing_handler import ProcessingHandler
 from control._def import *
-
 import control.tracking as tracking
 try:
     from control.multipoint_custom_script_entry import *
@@ -20,33 +21,40 @@ try:
 except:
     pass
 
+# general libs
 from queue import Queue
 from threading import Thread, Lock
-import time
+import math
+import random
 import numpy as np
-import pyqtgraph as pg
+import pandas as pd
 import scipy
 import scipy.signal
 import cv2
-from datetime import datetime
-
+import json
+import re
 from lxml import etree as ET
 from pathlib import Path
-import control.utils_config as utils_config
-
-import math
-import json
-import pandas as pd
-import re
-import imageio as iio
-
+from datetime import datetime
+import time
 import subprocess
+
+# stitching libs
+import imageio as iio
+import dask.array as da
+from dask_image.imread import imread as dask_imread
+from skimage import io, registration
+from aicsimageio.writers import OmeTiffWriter
+from aicsimageio.writers import OmeZarrWriter
+from aicsimageio import types
+from basicpy import BaSiC
 
 class ObjectiveStore:
     def __init__(self, objectives_dict = OBJECTIVES, default_objective = DEFAULT_OBJECTIVE):
         self.objectives_dict = objectives_dict
         self.default_objective = default_objective
         self.current_objective = default_objective
+
 
 class StreamHandler(QObject):
 
@@ -187,6 +195,7 @@ class StreamHandler(QObject):
         self.handler_busy = False
     '''
 
+
 class ImageSaver(QObject):
 
     stop_recording = Signal()
@@ -320,7 +329,6 @@ class ImageSaver_Tracking(QObject):
         self.stop_signal_received = True
         self.thread.join()
 
-
 '''
 class ImageSaver_MultiPointAcquisition(QObject):
 '''
@@ -369,6 +377,7 @@ class ImageDisplay(QObject):
         self.stop_signal_received = True
         self.thread.join()
 
+
 class Configuration:
     def __init__(self,mode_id=None,name=None,camera_sn=None,exposure_time=None,analog_gain=None,illumination_source=None,illumination_intensity=None, z_offset=None, pixel_format=None, _pixel_format_options=None):
         self.id = mode_id
@@ -385,6 +394,7 @@ class Configuration:
         self._pixel_format_options = _pixel_format_options
         if _pixel_format_options is None:
             self._pixel_format_options = self.pixel_format
+
 
 class LiveController(QObject):
 
@@ -556,6 +566,7 @@ class LiveController(QObject):
 
     def set_display_resolution_scaling(self, display_resolution_scaling):
         self.display_resolution_scaling = display_resolution_scaling/100
+
 
 class NavigationController(QObject):
 
@@ -1019,6 +1030,7 @@ class SlidePositionControlWorker(QObject):
         self.slidePositionController.slide_scanning_position_reached = True
         self.finished.emit()
 
+
 class SlidePositionController(QObject):
 
     signal_slide_loading_position_reached = Signal()
@@ -1085,6 +1097,7 @@ class SlidePositionController(QObject):
 
     # def threadFinished(self):
     # 	print('========= threadFinished ========= ')
+
 
 class AutofocusWorker(QObject):
 
@@ -1197,6 +1210,7 @@ class AutofocusWorker(QObject):
             print('moved to the bottom end of the AF range')
         if idx_in_focus == self.N-1:
             print('moved to the top end of the AF range')
+
 
 class AutoFocusController(QObject):
 
@@ -1906,6 +1920,7 @@ class MultiPointWorker(QObject):
         print(time.time())
         print(time.time()-start)
 
+
 class MultiPointController(QObject):
 
     acquisition_finished = Signal()
@@ -2409,6 +2424,7 @@ class TrackingController(QObject):
         self.tracking_frame_counter = 0
     '''
 
+
 class TrackingWorker(QObject):
 
     finished = Signal()
@@ -2591,15 +2607,6 @@ class TrackingWorker(QObject):
         while self.microcontroller.is_busy():
             time.sleep(SLEEP_TIME_S)
 
-import random
-import re
-import dask.array as da
-from dask_image.imread import imread as dask_imread
-from skimage import io, registration
-from aicsimageio.writers import OmeTiffWriter
-from aicsimageio.writers import OmeZarrWriter
-from aicsimageio import types
-from basicpy import BaSiC
 
 class Stitcher(Thread, QObject):
     update_progress = Signal(int, int)
@@ -2986,7 +2993,6 @@ class Stitcher(Thread, QObject):
             self.finished_saving.emit(self.output_path, self.dtype)
 
 
-
 class ImageDisplayWindow(QMainWindow):
 
     image_click_coordinates = Signal(int, int)
@@ -3131,6 +3137,7 @@ class ImageDisplayWindow(QMainWindow):
     def set_autolevel(self,enabled):
         self.autoLevels = enabled
         print('set autolevel to ' + str(enabled))
+
 
 class NavigationViewer(QFrame):
 
@@ -3337,6 +3344,7 @@ class ImageArrayDisplayWindow(QMainWindow):
         elif illumination_source == 13:
             self.graphics_widget_4.img.setImage(image,autoLevels=False)
 
+
 class ConfigurationManager(QObject):
     def __init__(self,filename="channel_configurations.xml"):
         QObject.__init__(self)
@@ -3393,6 +3401,7 @@ class ConfigurationManager(QObject):
         self.write_configuration(filename)
         for conf in selected_configurations:
             self.update_configuration_without_writing(conf.id, "Selected", 0)
+
 
 class PlateReaderNavigationController(QObject):
 
@@ -3508,6 +3517,7 @@ class PlateReaderNavigationController(QObject):
 
     def home_y(self):
         self.microcontroller.home_y()
+
 
 class ScanCoordinates(object):
     def __init__(self):

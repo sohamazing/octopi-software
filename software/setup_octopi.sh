@@ -8,25 +8,38 @@
 # ./setup_octopi.sh
 
 # Create a conda environment named stitching with Python 3.10
-echo "Creating conda environment 'octopi-software' with Python 3.10..."
-conda create -y -n octopi python=3.10
+echo "Creating conda environment 'octopi-software' with Python 3.10 if it doesnt already exist..."
+env_exists=$(conda env list | grep 'octopi' || true)
+    if [ -n "$env_exists" ]; then
+        echo "Environment 'octopi' already exists. Checking Python version..."
+        python_version=$(python --version)
+        if [[ "$python_version" == *"Python 3.10"* ]]; then
+            echo "Python 3.10 is already installed in 'octopi'. Proceeding with activation."
+        else
+            echo "Environment 'octopi' does not have Python 3.10. Recreating environment with Python 3.10..."
+            conda create -y -n octopi python=3.10 --force
+        fi
+    else
+        echo "Creating conda environment 'octopi' with Python 3.10..."
+        conda create -y -n octopi python=3.10
+    fi
 
 # Activate the stitching environment
 # echo "Activating the 'octopi-software' environment..."
-conda activate octopi 
-source activate octopi
+eval "$(conda shell.bash hook)"
+conda activate octopi
 
 # Update pip in the activated environment to ensure we're using the latest version
 echo "Updating pip..."
-conda run -n octopi pip install -U pip setuptools wheel
+pip install -U pip setuptools wheel
 
 # Install jax and jaxlib first (general installation)
-echo "Installing general jax and jaxlib dependencies..."
-conda run -n octopi pip install -U jax jaxlib
+#echo "Installing general jax and jaxlib dependencies..."
+#conda install -U jax jaxlib
 
 # Install other requirements before updating JAX to the specific version needed
 echo "Installing other requirements..."
-conda run -n octopi pip install -U numpy pandas scikit-learn
+pip install -U numpy pandas scikit-learn
 
 install_cuda_linux() {
     echo "Updating apt and apt-get..."
@@ -47,16 +60,16 @@ install_cuda_linux() {
     sudo apt-get install cuda
 
     echo "Installing Python packages for CUDA support..."
-    conda run -n octopi pip install -U cuda-python cupy-cuda12x
-    #conda run -n octopi pip install nvidia-cublas-cu12==12.1
-    conda run -n octopi conda install -y pytorch torchvision torchaudio cudatoolkit -c pytorch
+    pip install -U cuda-python cupy-cuda12x
+    #pip install nvidia-cublas-cu12==12.1
+    conda install -y pytorch torchvision torchaudio cudatoolkit -c pytorch
 }
 
 
 # Define a function to update JAX for CPU on macOS with the specific version
 install_mac() {
     echo "Updating JAX for CPU on macOS..."
-    conda run -n octopi pip install -U torch torchvision torch audio
+    conda install pytorch torchvision torchaudio -c pytorch -y
 }
 
 # Conditional update of JAX based on the operating system
@@ -66,22 +79,22 @@ case "$(uname -s)" in
     *)          echo "Unsupported OS for specific JAX installation. Proceeding with general JAX installation.";;
 esac
 
-conda run -n octopi pip install -U PyQt5 pyqtgraph qtpy pyserial
-conda run -n octopi pip install lxml==4.9.4 crc==1.3.0
-conda run -n octopi pip install -U opencv-python-headless opencv-contrib-python-headless
-conda run -n octopi pip install -U dask_image imageio aicsimageio tifffile 
-conda run -n octopi pip install -U napari[all] napari-ome-zarr basicpy
+pip install -U PyQt5 pyqtgraph qtpy pyserial
+pip install lxml==4.9.4 crc==1.3.0
+pip install -U opencv-python-headless opencv-contrib-python-headless
+pip install -U dask_image imageio aicsimageio tifffile 
+pip install -U napari[all] napari-ome-zarr basicpy
 
 # Define a function to update JAX with CUDA support on Linux
 update_jax_cuda_linux() {
     echo "Updating JAX with CUDA support for Linux..."
-    conda run -n octopi pip install -U 'jax[cuda12_pip]==0.4.23' --find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+    pip install -U 'jax[cuda12_pip]==0.4.23' --find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 }
 
 # Define a function to update JAX for CPU on macOS with the specific version
 update_jax_cpu_mac() {
     echo "Updating JAX for CPU on macOS..."
-    conda run -n octopi pip install -U 'jax[cpu]==0.4.23'
+    pip install -U 'jax[cpu]==0.4.23'
 }
 
 # Conditional update of JAX based on the operating system
@@ -96,7 +109,7 @@ cd drivers\ and\ libraries/daheng\ camera/Galaxy_Linux-x86_Gige-U3_32bits-64bits
 ./Galaxy_camera.run
 
 cd ../Galaxy_Linux_Python_1.0.1905.9081/api
-conda run -n octopi python3 setup.py build
-conda run -n octopi python3 setup.py install
+python3 setup.py build
+python3 setup.py install
 
 echo "Installation completed successfully."

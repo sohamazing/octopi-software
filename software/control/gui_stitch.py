@@ -45,8 +45,6 @@ elif FOCUS_CAMERA_TYPE == "FLIR":
 else:
     import control.camera as camera_fc
 
-
-
 import control.core_stitch as core
 import control.microcontroller as microcontroller
 import control.serial_peripherals as serial_peripherals
@@ -350,7 +348,7 @@ class OctopiGUI(QMainWindow):
             layout.addWidget(self.dacControlWidget)
         layout.addWidget(self.autofocusWidget)
         layout.addWidget(self.recordTabWidget)
-        layout.addWidget(self.stitcherWidget)
+        #layout.addWidget(self.stitcherWidget)
         layout.addWidget(self.navigationViewer)
         layout.addStretch()
 
@@ -426,6 +424,7 @@ class OctopiGUI(QMainWindow):
         self.multipointController.signal_current_configuration.connect(self.liveControlWidget.set_microscope_mode)
         self.multipointController.image_to_display_multi.connect(self.imageArrayDisplayWindow.display_image)
         self.multipointController.signal_stitcher.connect(self.startStitcher)
+        self.multiPointWidget.signal_display_stitcher_widget.connect(self.toggleStitcherWidget)
 
         self.liveControlWidget.signal_newExposureTime.connect(self.cameraSettingWidget.set_exposure_time)
         self.liveControlWidget.signal_newAnalogGain.connect(self.cameraSettingWidget.set_analog_gain)
@@ -444,7 +443,8 @@ class OctopiGUI(QMainWindow):
         self.multipointController.signal_register_current_fov.connect(self.navigationViewer.register_fov)
 
         # (double) click to move to a well
-        self.wellSelectionWidget.signal_wellSelectedPos.connect(self.navigationController.move_to)
+        self.wellSelectionWidget.signal_well_selected_pos.connect(self.navigationController.move_to)
+        self.wellSelectionWidget.signal_well_selected.connect(self.multiPointWidget.set_well_selected)
 
         # camera
         self.camera.set_callback(self.streamHandler.on_new_frame)
@@ -529,6 +529,16 @@ class OctopiGUI(QMainWindow):
         self.imageDisplayWindow.image_click_coordinates.connect(self.navigationController.move_from_click)
 
         self.navigationController.move_to_cached_position()
+
+    def toggleStitcherWidget(self, checked):
+        central_layout = self.centralWidget.layout()
+        if checked:
+            central_layout.insertWidget(central_layout.count() - 2, self.stitcherWidget)
+            self.stitcherWidget.show()
+        else:
+            central_layout.removeWidget(self.stitcherWidget)
+            self.stitcherWidget.hide()
+            self.stitcherWidget.setParent(None)
 
     def startStitcher(self, acquisition_path):
         # Fetch settings from StitcherWidget controls

@@ -1,23 +1,23 @@
 # set QT_API environment variable
 import os 
 os.environ["QT_API"] = "pyqt5"
-import qtpy
-
-import locale
-import napari
 
 # qt libraries
+import qtpy
 from qtpy.QtCore import *
 from qtpy.QtWidgets import *
 from qtpy.QtGui import *
-
 import pyqtgraph as pg
 
+# other libs
 import pandas as pd
-
+import locale
+import napari
 from datetime import datetime
 
+# control software
 from control._def import *
+
 
 class WrapperWindow(QMainWindow):
     def __init__(self, content_widget, *args, **kwargs):
@@ -31,6 +31,7 @@ class WrapperWindow(QMainWindow):
 
     def closeForReal(self, event):
         super().closeEvent(event)
+
 
 class CollapsibleGroupBox(QGroupBox):
     def __init__(self, title):
@@ -48,6 +49,7 @@ class CollapsibleGroupBox(QGroupBox):
 
     def toggle_content(self,state):
         self.content_widget.setVisible(state)
+
 
 class ConfigEditorForAcquisitions(QDialog):
     def __init__(self, configManager, only_z_offset=True):
@@ -180,7 +182,6 @@ class ConfigEditorForAcquisitions(QDialog):
             self.init_ui(only_z_offset)
 
 
-
 class ConfigEditor(QDialog):
     def __init__(self, config):
         super().__init__()
@@ -307,6 +308,7 @@ class ConfigEditorBackwardsCompatible(ConfigEditor):
             pass
         self.close()
 
+
 class SpinningDiskConfocalWidget(QWidget):
     def __init__(self, xlight, config_manager=None):
         super(SpinningDiskConfocalWidget,self).__init__()
@@ -427,6 +429,7 @@ class SpinningDiskConfocalWidget(QWidget):
         self.xlight.set_dichroic(selected_pos)
         self.enable_all_buttons()
   
+
 class ObjectivesWidget(QWidget):
     def __init__(self, objective_store):
         super(ObjectivesWidget, self).__init__()
@@ -462,6 +465,7 @@ class ObjectivesWidget(QWidget):
         #text = "\n".join([f"{key}: {value}" for key, value in objective_data.items()])
         self.objectiveStore.current_objective = selected_key
         #self.text_browser.setPlainText(text)
+
 
 class FocusMapWidget(QWidget):
 
@@ -533,8 +537,6 @@ class FocusMapWidget(QWidget):
         except IndexError:
             pass
 
-
-
     def enable_focusmap(self):
         self.disable_all_buttons()
         if self.autofocusController.use_focus_map == False:
@@ -555,6 +557,7 @@ class FocusMapWidget(QWidget):
             pass
         self.update_focusmap_display()
         self.enable_all_buttons()
+
 
 class CameraSettingsWidget(QFrame):
 
@@ -960,6 +963,7 @@ class LiveControlWidget(QFrame):
         self.dropdown_triggerManu.setCurrentText(trigger_mode)
         self.liveController.set_trigger_mode(self.dropdown_triggerManu.currentText())
 
+
 class RecordingWidget(QFrame):
     def __init__(self, streamHandler, imageSaver, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1063,6 +1067,7 @@ class RecordingWidget(QFrame):
         self.btn_record.setChecked(False)
         self.streamHandler.stop_recording()
         self.btn_setSavingDir.setEnabled(True)
+
 
 class NavigationWidget(QFrame):
     def __init__(self, navigationController, slidePositionController=None, main=None, widget_configuration = 'full', *args, **kwargs):
@@ -1324,6 +1329,7 @@ class NavigationWidget(QFrame):
             self.slidePositionController.move_to_slide_scanning_position()
         self.btn_load_slide.setEnabled(False)
 
+
 class DACControWidget(QFrame):
     def __init__(self, microcontroller ,*args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1387,6 +1393,7 @@ class DACControWidget(QFrame):
     def set_DAC1(self,value):
         self.microcontroller.analog_write_onboard_DAC(1,int(value*65535/100))
 
+
 class AutoFocusWidget(QFrame):
     def __init__(self, autofocusController, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1444,6 +1451,7 @@ class AutoFocusWidget(QFrame):
     def autofocus_is_finished(self):
         self.btn_autofocus.setChecked(False)
 
+
 class StatsDisplayWidget(QFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1477,10 +1485,14 @@ class StatsDisplayWidget(QFrame):
 
 
 class MultiPointWidget(QFrame):
+    signal_display_stitcher_widget = Signal(bool)
+
     def __init__(self, multipointController, configurationManager = None, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.multipointController = multipointController
         self.configurationManager = configurationManager
+        #self.wellSelectionWidget = wellSelctionWidget
+        self.well_selected = False
         self.base_path_is_set = False
         self.add_components()
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
@@ -1575,6 +1587,9 @@ class MultiPointWidget(QFrame):
         self.checkbox_withReflectionAutofocus = QCheckBox('Reflection AF')
         self.checkbox_withReflectionAutofocus.setChecked(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
 
+        self.checkbox_stitchOutput = QCheckBox('Stitch Output')
+        self.checkbox_stitchOutput.setChecked(False)
+
         self.multipointController.set_reflection_af_flag(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
         self.btn_startAcquisition = QPushButton('Start Acquisition')
         self.btn_startAcquisition.setCheckable(True)
@@ -1614,6 +1629,7 @@ class MultiPointWidget(QFrame):
         grid_af.addWidget(self.checkbox_genFocusMap)
         if SUPPORT_LASER_AUTOFOCUS:
             grid_af.addWidget(self.checkbox_withReflectionAutofocus)
+        grid_af.addWidget(self.checkbox_stitchOutput)
 
         grid_line3 = QHBoxLayout()
         grid_line3.addWidget(self.list_configurations)
@@ -1643,7 +1659,9 @@ class MultiPointWidget(QFrame):
         self.checkbox_withAutofocus.stateChanged.connect(self.multipointController.set_af_flag)
         self.checkbox_withReflectionAutofocus.stateChanged.connect(self.multipointController.set_reflection_af_flag)
         self.checkbox_genFocusMap.stateChanged.connect(self.multipointController.set_gen_focus_map_flag)
+        self.checkbox_stitchOutput.toggled.connect(self.displayStitcherWidget)
         self.btn_setSavingDir.clicked.connect(self.set_saving_dir)
+        
         self.btn_startAcquisition.clicked.connect(self.toggle_acquisition)
         self.multipointController.acquisition_finished.connect(self.acquisition_is_finished)
 
@@ -1672,11 +1690,20 @@ class MultiPointWidget(QFrame):
         self.lineEdit_savingDir.setText(save_dir_base)
         self.base_path_is_set = True
 
+    def set_well_selected(self):
+        self.well_selected = True
+
     def toggle_acquisition(self,pressed):
         if self.base_path_is_set == False:
             self.btn_startAcquisition.setChecked(False)
             msg = QMessageBox()
             msg.setText("Please choose base saving directory first")
+            msg.exec_()
+            return
+        if self.well_selected == False:
+            self.btn_startAcquisition.setChecked(False)
+            msg = QMessageBox()
+            msg.setText("Please choose a well to scan first")
             msg.exec_()
             return
         if pressed:
@@ -1706,6 +1733,10 @@ class MultiPointWidget(QFrame):
         self.btn_startAcquisition.setChecked(False)
         self.setEnabled_all(True)
 
+    def displayStitcherWidget(self, checked):
+        # This signal will be connected to a slot in the main GUI that will handle the display logic.
+        self.signal_display_stitcher_widget.emit(checked)
+
     def setEnabled_all(self,enabled,exclude_btn_startAcquisition=True):
         self.btn_setSavingDir.setEnabled(enabled)
         self.lineEdit_savingDir.setEnabled(enabled)
@@ -1731,6 +1762,7 @@ class MultiPointWidget(QFrame):
     def enable_the_start_aquisition_button(self):
         self.btn_startAcquisition.setEnabled(True)
 
+
 class MultiPointWidget2(QFrame):
     def __init__(self, navigationController, navigationViewer, multipointController, configurationManager = None, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1739,6 +1771,7 @@ class MultiPointWidget2(QFrame):
         self.configurationManager = configurationManager
         self.navigationController = navigationController
         self.navigationViewer = navigationViewer
+        # self.wellSelectionWidget 
         self.base_path_is_set = False
         self.location_list = np.empty((0, 3), dtype=float)
         self.add_components()
@@ -1927,6 +1960,7 @@ class MultiPointWidget2(QFrame):
         self.checkbox_withAutofocus.stateChanged.connect(self.multipointController.set_af_flag)
         self.checkbox_withReflectionAutofocus.stateChanged.connect(self.multipointController.set_reflection_af_flag)
         self.btn_setSavingDir.clicked.connect(self.set_saving_dir)
+
         self.btn_startAcquisition.clicked.connect(self.toggle_acquisition)
         self.multipointController.acquisition_finished.connect(self.acquisition_is_finished)
 
@@ -1976,6 +2010,7 @@ class MultiPointWidget2(QFrame):
             msg.setText("Please choose base saving directory first")
             msg.exec_()
             return
+
         if pressed:
             # @@@ to do: add a widgetManger to enable and disable widget 
             # @@@ to do: emit signal to widgetManager to disable other widgets
@@ -2177,8 +2212,8 @@ class MultiPointWidget2(QFrame):
                     print("Duplicate values not added based on x and y.")
             print(self.location_list)
 
+
 class StitcherWidget(QFrame):
-    viewOutputRequested = Signal()
 
     def __init__(self, configurationManager, *args, **kwargs): #multiPointWidget, multiPointWidget2,*args, **kwargs):
         super(StitcherWidget, self).__init__(*args, **kwargs)
@@ -2234,8 +2269,8 @@ class StitcherWidget(QFrame):
 
         # Progress bar
         self.progressBar = QProgressBar()
-        self.progressBar.setVisible(False)  # Initially hidden
         self.layout.addWidget(self.progressBar)
+        self.progressBar.setVisible(False)  # Initially hidden
 
         # Status label
         self.statusLabel = QLabel("Status: Image Acquisition")
@@ -2247,12 +2282,14 @@ class StitcherWidget(QFrame):
 
     def gettingFlatfields(self):
         self.statusLabel.setText('Status: Calculating Flatfield Images...')
+        self.viewOutputButton.setVisible(False)
         self.progressBar.setValue(0)
         self.statusLabel.setVisible(True)
         self.progressBar.setVisible(True)
 
     def startingStitching(self):
         self.statusLabel.setText('Status: Stitching Acquisition Images...')
+        self.viewOutputButton.setVisible(False)
         self.progressBar.setValue(0)
         self.statusLabel.setVisible(True)
         self.progressBar.setVisible(True)
@@ -2272,6 +2309,7 @@ class StitcherWidget(QFrame):
     def finishedSaving(self, output_path, dtype):
         self.statusLabel.setVisible(False)
         self.progressBar.setVisible(False)
+        self.viewOutputButton.setVisible(True)
         self.viewOutputButton.setEnabled(True)
         try: 
             self.viewOutputButton.clicked.disconnect()
@@ -2308,8 +2346,6 @@ class StitcherWidget(QFrame):
             # napari.run()  # Start the Napari event loop
         except Exception as e:
             QMessageBox.critical(self, "Error Opening in Napari", str(e))
-
-
 
 
 class TrackingControllerWidget(QFrame):
@@ -2539,6 +2575,7 @@ class TrackingControllerWidget(QFrame):
             self.btn_startAcquisition.setEnabled(enabled)
     '''
 
+
 class PlateReaderAcquisitionWidget(QFrame):
     def __init__(self, plateReadingController, configurationManager = None, show_configurations = True, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2669,6 +2706,7 @@ class PlateReaderAcquisitionWidget(QFrame):
     def slot_homing_complete(self):
         self.btn_startAcquisition.setEnabled(True)
     
+
 class PlateReaderNavigationWidget(QFrame):
     def __init__(self, plateReaderNavigationController, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2806,6 +2844,7 @@ class TriggerControlWidget(QFrame):
         self.signal_trigger_fps.emit(fps)
         self.microcontroller2.set_camera_trigger_frequency(self.fps_trigger)
 
+
 class MultiCameraRecordingWidget(QFrame):
     def __init__(self, streamHandler, imageSaver, channels, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2918,6 +2957,7 @@ class MultiCameraRecordingWidget(QFrame):
             self.streamHandler[channel].stop_recording()
         self.btn_setSavingDir.setEnabled(True)
 
+
 class WaveformDisplay(QFrame):
 
     def __init__(self, N=1000, include_x=True, include_y=True, main=None, *args, **kwargs):
@@ -2951,6 +2991,7 @@ class WaveformDisplay(QFrame):
         self.plotWidget['X'].update_N(N)
         self.plotWidget['Y'].update_N(N)
 
+
 class PlotWidget(pg.GraphicsLayoutWidget):
     
     def __init__(self, title='', N = 1000, parent=None,add_legend=False):
@@ -2965,6 +3006,7 @@ class PlotWidget(pg.GraphicsLayoutWidget):
 
     def update_N(self,N):
         self.N = N
+
 
 class DisplacementMeasurementWidget(QFrame):
     def __init__(self, displacementMeasurementController, waveformDisplay, main=None, *args, **kwargs):
@@ -3075,6 +3117,7 @@ class DisplacementMeasurementWidget(QFrame):
         self.reading_x.setText("{:.2f}".format(readings[0]))
         self.reading_y.setText("{:.2f}".format(readings[1]))
 
+
 class LaserAutofocusControlWidget(QFrame):
     def __init__(self, laserAutofocusController, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -3153,8 +3196,8 @@ class LaserAutofocusControlWidget(QFrame):
 
 class WellSelectionWidget(QTableWidget):
 
-    signal_wellSelected = Signal(int,int,float)
-    signal_wellSelectedPos = Signal(float,float)
+    signal_well_selected = Signal(bool)
+    signal_well_selected_pos = Signal(float,float)
 
     def __init__(self, format_, *args):
 
@@ -3260,15 +3303,25 @@ class WellSelectionWidget(QTableWidget):
         if (row >= 0 + NUMBER_OF_SKIP and row <= self.rows-1-NUMBER_OF_SKIP ) and ( col >= 0 + NUMBER_OF_SKIP and col <= self.columns-1-NUMBER_OF_SKIP ):
             x_mm = X_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_X_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + col*WELL_SPACING_MM + A1_X_MM + WELLPLATE_OFFSET_X_mm
             y_mm = Y_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_Y_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + row*WELL_SPACING_MM + A1_Y_MM + WELLPLATE_OFFSET_Y_mm
-            self.signal_wellSelectedPos.emit(x_mm,y_mm)
+            self.signal_well_selected.emit(True)
+            self.signal_well_selected_pos.emit(x_mm,y_mm)
+
         # print('(' + str(row) + ',' + str(col) + ') doubleclicked')
 
     def onSingleClick(self,row,col):
         # self.get_selected_cells()
-        pass
+        if (row >= 0 + NUMBER_OF_SKIP and row <= self.rows-1-NUMBER_OF_SKIP ) and ( col >= 0 + NUMBER_OF_SKIP and col <= self.columns-1-NUMBER_OF_SKIP ):
+            x_mm = X_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_X_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + col*WELL_SPACING_MM + A1_X_MM + WELLPLATE_OFFSET_X_mm
+            y_mm = Y_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_Y_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + row*WELL_SPACING_MM + A1_Y_MM + WELLPLATE_OFFSET_Y_mm
+            self.signal_well_selected.emit(True)
+            # self.signal_well_selected_pos.emit(x_mm,y_mm)
 
     def get_selected_cells(self):
         list_of_selected_cells = []
         for index in self.selectedIndexes():
              list_of_selected_cells.append((index.row(),index.column()))
+        if not list_of_selected_cells:
+            self.signal_well_selected.emit(False)
+        else:
+            self.signal_well_selected.emit(True)
         return(list_of_selected_cells)
