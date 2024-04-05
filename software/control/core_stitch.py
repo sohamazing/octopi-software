@@ -2779,17 +2779,28 @@ class Stitcher(Thread, QObject):
         if self.registration_channel not in self.channel_names:
             self.registration_channel = self.channel_names[0] 
 
-        dx_mm = self.acquisition_params["dx(mm)"]
-        dy_mm = self.acquisition_params["dy(mm)"]
-        sensor_pixel_size_um = self.acquisition_params["sensor_pixel_size_um"]
+        dx_mm = self.acquisition_params['dx(mm)']  # physical distance between adjacent scans in x direction
+        dy_mm = self.acquisition_params['dy(mm)']  # physical distance between adjacent scans in y direction
+        obj_mag = self.acquisition_params['objective']['magnification'] 
+        obj_tube_lens_mm = self.acquisition_params['objective']['tube_lens_f_mm']
+        sensor_pixel_size_um = self.acquisition_params['sensor_pixel_size_um']
+        
+        obj_focal_length_mm = obj_tube_lens_mm / obj_mag  # Objective focal length
+        tube_lens_mm = self.acquisition_params['tube_lens_mm']  # Actual tube lens focal length used in your system
+        actual_mag = tube_lens_mm / obj_focal_length_mm  # Actual magnification
+
+        pixel_size_um = sensor_pixel_size_um / actual_mag
 
         # Convert mm to pixels
-        dx_pixels = dx_mm * 1000 / sensor_pixel_size_um
-        dy_pixels = dy_mm * 1000 / sensor_pixel_size_um
+        dx_pixels = dx_mm * 1000 / pixel_size_um
+        dy_pixels = dy_mm * 1000 / pixel_size_um
 
         # Calculate max overlaps based on the movement between images and the size of the images
-        h_max_overlap = int((self.input_width - dx_pixels) * 1.2)
-        v_max_overlap = int((self.input_height - dy_pixels) * 1.2)
+        h_max_overlap = int((self.input_width - dx_pixels) * 1.1)
+        v_max_overlap = int((self.input_height - dy_pixels) * 1.1)
+
+        #dx_overlap = self.input_width - dx_pixels
+        #dy_overlap = self.input_height - dy_pixels
 
         print(v_max_overlap)
         print(h_max_overlap)

@@ -351,7 +351,7 @@ class OctopiGUI(QMainWindow):
         layout.addWidget(self.autofocusWidget)
         layout.addWidget(self.recordTabWidget)
         layout.addWidget(self.stitcherWidget)
-        #layout.addWidget(self.navigationViewer)
+        layout.addWidget(self.navigationViewer)
         layout.addStretch()
 
         # transfer the layout to the central widget
@@ -370,7 +370,7 @@ class OctopiGUI(QMainWindow):
             dock_wellSelection = dock.Dock('Well Selector', autoOrientation = False)
             dock_wellSelection.showTitleBar()
             dock_wellSelection.addWidget(self.wellSelectionWidget, 0 , 0)
-            dock_wellSelection.addWidget(self.navigationViewer, 0, 1)
+            #dock_wellSelection.addWidget(self.navigationViewer, 0, 1)
             dock_wellSelection.setFixedHeight(dock_wellSelection.minimumSizeHint().height())
             dock_controlPanel = dock.Dock('Controls', autoOrientation = False)
             # dock_controlPanel.showTitleBar()

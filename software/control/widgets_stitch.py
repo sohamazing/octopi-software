@@ -2180,9 +2180,11 @@ class MultiPointWidget2(QFrame):
 class StitcherWidget(QFrame):
     viewOutputRequested = Signal()
 
-    def __init__(self, configurationManager, *args, **kwargs):
+    def __init__(self, configurationManager, *args, **kwargs): #multiPointWidget, multiPointWidget2,*args, **kwargs):
         super(StitcherWidget, self).__init__(*args, **kwargs)
         self.configurationManager = configurationManager
+        #self.multiPointWidget = multiPointWidget
+        #self.multiPointWidget2 = self.MultiPointWidget2
         self.output_path = ""
         self.contrast_limits = None
 
