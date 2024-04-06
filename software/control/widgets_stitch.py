@@ -1486,6 +1486,7 @@ class StatsDisplayWidget(QFrame):
 
 class MultiPointWidget(QFrame):
     signal_display_stitcher_widget = Signal(bool)
+    signal_channel_selected = Signal(list)
 
     def __init__(self, multipointController, configurationManager = None, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1581,7 +1582,7 @@ class MultiPointWidget(QFrame):
         self.checkbox_withAutofocus.setChecked(MULTIPOINT_AUTOFOCUS_ENABLE_BY_DEFAULT)
         self.multipointController.set_af_flag(MULTIPOINT_AUTOFOCUS_ENABLE_BY_DEFAULT)
 
-        self.checkbox_genFocusMap = QCheckBox('Generate focus map')
+        self.checkbox_genFocusMap = QCheckBox('Generate Focus Map')
         self.checkbox_genFocusMap.setChecked(False)
 
         self.checkbox_withReflectionAutofocus = QCheckBox('Reflection AF')
@@ -1610,15 +1611,17 @@ class MultiPointWidget(QFrame):
         grid_line2.addWidget(self.entry_deltaX, 0,1)
         grid_line2.addWidget(QLabel('Nx'), 0,2)
         grid_line2.addWidget(self.entry_NX, 0,3)
-        grid_line2.addWidget(QLabel('dy (mm)'), 0,4)
-        grid_line2.addWidget(self.entry_deltaY, 0,5)
-        grid_line2.addWidget(QLabel('Ny'), 0,6)
-        grid_line2.addWidget(self.entry_NY, 0,7)
 
-        grid_line2.addWidget(QLabel('dz (um)'), 1,0)
-        grid_line2.addWidget(self.entry_deltaZ, 1,1)
-        grid_line2.addWidget(QLabel('Nz'), 1,2)
-        grid_line2.addWidget(self.entry_NZ, 1,3)
+        grid_line2.addWidget(QLabel('dy (mm)'), 1,0)
+        grid_line2.addWidget(self.entry_deltaY, 1,1)
+        grid_line2.addWidget(QLabel('Ny'), 1,2)
+        grid_line2.addWidget(self.entry_NY, 1,3)
+
+        grid_line2.addWidget(QLabel('dz (um)'), 0,4)
+        grid_line2.addWidget(self.entry_deltaZ, 0,5)
+        grid_line2.addWidget(QLabel('Nz'), 0,6)
+        grid_line2.addWidget(self.entry_NZ, 0,7)
+
         grid_line2.addWidget(QLabel('dt (s)'), 1,4)
         grid_line2.addWidget(self.entry_dt, 1,5)
         grid_line2.addWidget(QLabel('Nt'), 1,6)
@@ -1661,6 +1664,7 @@ class MultiPointWidget(QFrame):
         self.checkbox_genFocusMap.stateChanged.connect(self.multipointController.set_gen_focus_map_flag)
         self.checkbox_stitchOutput.toggled.connect(self.displayStitcherWidget)
         self.btn_setSavingDir.clicked.connect(self.set_saving_dir)
+        self.list_configurations.itemSelectionChanged.connect(self.emit_selected_channels)
         
         self.btn_startAcquisition.clicked.connect(self.toggle_acquisition)
         self.multipointController.acquisition_finished.connect(self.acquisition_is_finished)
@@ -1693,6 +1697,10 @@ class MultiPointWidget(QFrame):
     def set_well_selected(self):
         self.well_selected = True
 
+    def emit_selected_channels(self):
+        selected_channels = [item.text() for item in self.list_configurations.selectedItems()]
+        self.signal_channel_selected.emit(selected_channels)
+
     def toggle_acquisition(self,pressed):
         if self.base_path_is_set == False:
             self.btn_startAcquisition.setChecked(False)
@@ -1703,7 +1711,13 @@ class MultiPointWidget(QFrame):
         if self.well_selected == False:
             self.btn_startAcquisition.setChecked(False)
             msg = QMessageBox()
-            msg.setText("Please choose a well to scan first")
+            msg.setText("Please select a well to scan first")
+            msg.exec_()
+            return
+        if not self.list_configurations.selectedItems(): # no channel selected
+            self.btn_startAcquisition.setChecked(False)
+            msg = QMessageBox()
+            msg.setText("Please select at least 1 imaging channel first")
             msg.exec_()
             return
         if pressed:
@@ -1753,6 +1767,7 @@ class MultiPointWidget(QFrame):
         self.checkbox_withAutofocus.setEnabled(enabled)
         self.checkbox_withReflectionAutofocus.setEnabled(enabled)
         self.checkbox_genFocusMap.setEnabled(enabled)
+        self.checkbox_stitchOutput.setEnabled(enabled)
         if exclude_btn_startAcquisition is not True:
             self.btn_startAcquisition.setEnabled(enabled)
 
@@ -1876,6 +1891,8 @@ class MultiPointWidget2(QFrame):
         self.checkbox_withReflectionAutofocus = QCheckBox('Reflection AF')
         self.checkbox_withReflectionAutofocus.setChecked(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
         self.multipointController.set_reflection_af_flag(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
+        self.checkbox_stitchOutput = QCheckBox('Stitch Output')
+        self.checkbox_stitchOutput.setChecked(False)
         self.btn_startAcquisition = QPushButton('Start Acquisition')
         self.btn_startAcquisition.setCheckable(True)
         self.btn_startAcquisition.setChecked(False)
@@ -2086,6 +2103,7 @@ class MultiPointWidget2(QFrame):
         self.list_configurations.setEnabled(enabled)
         self.checkbox_withAutofocus.setEnabled(enabled)
         self.checkbox_withReflectionAutofocus.setEnabled(enabled)
+        self.checkbox_stitchOutput.setEnabled(enabled)
         if exclude_btn_startAcquisition is not True:
             self.btn_startAcquisition.setEnabled(enabled)
 
@@ -2224,15 +2242,16 @@ class StitcherWidget(QFrame):
         self.contrast_limits = None
 
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)  # Set frame style
-        self.layout = QVBoxLayout(self)  # Initialize layout with self as the parent
-
+        #self.layout = QGridLayout(self)  # Initialize layout with self as the parent
+        self.layout = QVBoxLayout(self)
         self.topLayout = QHBoxLayout()
         self.colLayout1 = QVBoxLayout()
         self.colLayout2 = QVBoxLayout()
 
+
         # Apply flatfield correction checkbox
         self.applyFlatfieldCheck = QCheckBox("Apply Flatfield Correction")
-        self.colLayout1.addWidget(self.applyFlatfieldCheck)
+        self.colLayout2.addWidget(self.applyFlatfieldCheck)
 
         # Output format dropdown
         self.outputFormatLabel = QLabel('Select Output Format:', self)
@@ -2249,11 +2268,14 @@ class StitcherWidget(QFrame):
 
         # Select Registartion Channel
         self.registrationChannelLabel = QLabel("Select Registration Channel:", self)
+        self.registrationChannelLabel.setVisible(False)
         self.colLayout2.addWidget(self.registrationChannelLabel)
         self.registrationChannelCombo = QComboBox(self)
-        self.registrationChannelCombo.setEnabled(False)
-        for microscope_configuration in self.configurationManager.configurations:
-            self.registrationChannelCombo.addItems([microscope_configuration.name])
+        #self.registrationChannelCombo.setEnabled(False)
+        self.registrationChannelLabel.setVisible(False)
+        self.registrationChannelCombo.setVisible(False)
+        #for microscope_configuration in self.configurationManager.configurations:
+        #    self.registrationChannelCombo.addItems([microscope_configuration.name])
         self.colLayout2.addWidget(self.registrationChannelCombo)
         ### todo: make sure selected channel is one of the selected modes (check if in multipointcontroller channels selected)
         
@@ -2278,7 +2300,19 @@ class StitcherWidget(QFrame):
         self.statusLabel.setVisible(False)
 
     def onRegistrationCheck(self, checked):
-        self.registrationChannelCombo.setEnabled(checked)
+        #self.registrationChannelCombo.setEnabled(checked)
+        self.registrationChannelLabel.setVisible(checked)
+        self.registrationChannelCombo.setVisible(checked)
+        if checked:
+            self.colLayout2.removeWidget(self.applyFlatfieldCheck)
+            self.colLayout1.insertWidget(0, self.applyFlatfieldCheck)
+        else:
+            self.colLayout1.removeWidget(self.applyFlatfieldCheck)
+            self.colLayout2.insertWidget(0, self.applyFlatfieldCheck)
+
+    def updateRegistrationChannels(self, selected_channels):
+        self.registrationChannelCombo.clear()  # Clear existing items
+        self.registrationChannelCombo.addItems(selected_channels)
 
     def gettingFlatfields(self):
         self.statusLabel.setText('Status: Calculating Flatfield Images...')

@@ -425,6 +425,8 @@ class OctopiGUI(QMainWindow):
         self.multipointController.image_to_display_multi.connect(self.imageArrayDisplayWindow.display_image)
         self.multipointController.signal_stitcher.connect(self.startStitcher)
         self.multiPointWidget.signal_display_stitcher_widget.connect(self.toggleStitcherWidget)
+        self.multiPointWidget.signal_channel_selected.connect(self.stitcherWidget.updateRegistrationChannels) # change enabled registration channels
+
 
         self.liveControlWidget.signal_newExposureTime.connect(self.cameraSettingWidget.set_exposure_time)
         self.liveControlWidget.signal_newAnalogGain.connect(self.cameraSettingWidget.set_analog_gain)
