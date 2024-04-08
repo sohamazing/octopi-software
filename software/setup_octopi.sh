@@ -59,7 +59,7 @@ install_cuda_linux() {
     echo "Installing CUDA..."
     sudo apt-get install cuda
 
-    echo "Installing Python packages for CUDA support..."
+    echo "Setting up packages for CUDA support..."
     pip install -U cuda-python cupy-cuda12x
     #pip install nvidia-cublas-cu12==12.1
     conda install -y pytorch torchvision torchaudio cudatoolkit -c pytorch
@@ -68,7 +68,7 @@ install_cuda_linux() {
 
 # Define a function to update JAX for CPU on macOS with the specific version
 install_mac() {
-    echo "Updating JAX for CPU on macOS..."
+    echo "Installing packages for GPU on macOS..."
     conda install pytorch torchvision torchaudio -c pytorch -y
 }
 
@@ -76,7 +76,7 @@ install_mac() {
 case "$(uname -s)" in
     Linux*)     install_cuda_linux;;
     Darwin*)    install_mac;;
-    *)          echo "Unsupported OS for specific JAX installation. Proceeding with general JAX installation.";;
+    *)          echo "Unsupported OS for specific GPU installation. Proceeding with general CPU installation.";;
 esac
 
 pip install -U PyQt5 pyqtgraph qtpy pyserial
