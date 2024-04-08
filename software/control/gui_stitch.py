@@ -325,6 +325,7 @@ class OctopiGUI(QMainWindow):
         self.multiPointWidget = widgets.MultiPointWidget(self.multipointController,self.configurationManager)
         self.multiPointWidget2 = widgets.MultiPointWidget2(self.navigationController,self.navigationViewer,self.multipointController,self.configurationManager)
         self.stitcherWidget = widgets.StitcherWidget(self.configurationManager)
+        self.stitchingPreviewWidget = widgets.StitchingPreviewWidget()
 
         self.recordTabWidget = QTabWidget()
         if ENABLE_TRACKING:
@@ -369,6 +370,7 @@ class OctopiGUI(QMainWindow):
             dock_wellSelection.showTitleBar()
             dock_wellSelection.addWidget(self.wellSelectionWidget, 0 , 0)
             #dock_wellSelection.addWidget(self.navigationViewer, 0, 1)
+            dock_wellSelection.addWidget(self.stitchingPreviewWidget, 0, 1)
             dock_wellSelection.setFixedHeight(dock_wellSelection.minimumSizeHint().height())
             dock_controlPanel = dock.Dock('Controls', autoOrientation = False)
             # dock_controlPanel.showTitleBar()
@@ -426,7 +428,8 @@ class OctopiGUI(QMainWindow):
         self.multipointController.signal_stitcher.connect(self.startStitcher)
         self.multiPointWidget.signal_display_stitcher_widget.connect(self.toggleStitcherWidget)
         self.multiPointWidget.signal_channel_selected.connect(self.stitcherWidget.updateRegistrationChannels) # change enabled registration channels
-
+        self.multiPointWidget.signal_channel_selected.connect(self.stitchingPreviewWidget.updateChannels)
+        self.multiPointWidget.signal_Nx_Ny_Nz.connect(self.stitchingPreviewWidget.setZLevels)
 
         self.liveControlWidget.signal_newExposureTime.connect(self.cameraSettingWidget.set_exposure_time)
         self.liveControlWidget.signal_newAnalogGain.connect(self.cameraSettingWidget.set_analog_gain)
@@ -443,6 +446,8 @@ class OctopiGUI(QMainWindow):
         # display the FOV in the viewer
         self.navigationController.xyPos.connect(self.navigationViewer.update_current_location)
         self.multipointController.signal_register_current_fov.connect(self.navigationViewer.register_fov)
+        self.multipointController.stitching_preview_init.connect(self.stitchingPreviewWidget.initPreview)
+        self.multipointController.stitching_preview_update.connect(self.stitchingPreviewWidget.updatePreview)
 
         # (double) click to move to a well
         self.wellSelectionWidget.signal_well_selected_pos.connect(self.navigationController.move_to)

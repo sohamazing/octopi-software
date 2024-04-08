@@ -1420,6 +1420,8 @@ class MultiPointWorker(QObject):
     signal_current_configuration = Signal(Configuration)
     signal_register_current_fov = Signal(float,float)
     signal_detection_stats = Signal(object)
+    stitching_preview_update = Signal(np.ndarray, int, int, int, str)
+    stitching_preview_init = Signal(int, int, object)
 
     signal_update_stats = Signal(object)
 
@@ -1609,6 +1611,7 @@ class MultiPointWorker(QObject):
             if Z_STACKING_CONFIG == 'FROM TOP':
                 self.deltaZ_usteps = -abs(self.deltaZ_usteps)
 
+            init_stitching_preview = False
             # along y
             for i in range(self.NY):
 
@@ -1668,7 +1671,7 @@ class MultiPointWorker(QObject):
                                 except:
                                     file_ID = coordiante_name + str(i) + '_' + str(j if self.x_scan_direction==1 else self.NX-1-j)
                                     saving_path = os.path.join(current_path, file_ID + '_focus_camera.bmp')
-                                    iio.imwrite(saving_path,self.microscope.laserAutofocusController.image) 
+                                    iio.imwrite(saving_path,self.microscope.laserAutofocusController.image)
                                     print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! laser AF failed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 
                         if (self.NZ > 1):
@@ -1692,12 +1695,15 @@ class MultiPointWorker(QObject):
                             if INVERTED_OBJECTIVE:
                                 sgn_i = -sgn_i
                             sgn_j = self.x_scan_direction if self.deltaX >= 0 else -self.x_scan_direction
-                            file_ID = coordiante_name + str(self.NY-1-i if sgn_i == -1 else i) + '_' + str(j if sgn_j == 1 else self.NX-1-j) + '_' + str(k)
+
+                            real_i = self.NY-1-i if sgn_i == -1 else i
+                            real_j = j if sgn_j == 1 else self.NX-1-j
+
+                            file_ID = coordiante_name + str(real_i) + '_' + str(real_j) + '_' + str(k)
                             # metadata = dict(x = self.navigationController.x_pos_mm, y = self.navigationController.y_pos_mm, z = self.navigationController.z_pos_mm)
                             # metadata = json.dumps(metadata)
 
-
-                            current_round_images = {}
+             # not needed   # current_round_images = {}
                             # iterate through selected modes
                             for config in self.selected_configurations:
                                 if config.z_offset is not None: # perform z offset for config, assume
@@ -1765,9 +1771,12 @@ class MultiPointWorker(QObject):
                                             else:
                                                 image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
                                         cv2.imwrite(saving_path,image)
-                                        
-                                    current_round_images[config.name] = np.copy(image)
 
+                                    if not init_stitching_preview:
+                                        init_stitching_preview = True
+                                        self.stitching_preview_init.emit(image.shape[0],image.shape[1], image.dtype)
+                                    self.stitching_preview_update.emit(image, real_i, real_j, k, config.name)    
+                                    #current_round_images[config.name] = np.copy(image)
                                     QApplication.processEvents()
                                 else:
                                     if self.usb_spectrometer != None:
@@ -1925,12 +1934,14 @@ class MultiPointController(QObject):
 
     acquisition_finished = Signal()
     image_to_display = Signal(np.ndarray)
-    image_to_display_multi = Signal(np.ndarray,int)
+    image_to_display_multi = Signal(np.ndarray, int)
     spectrum_to_display = Signal(np.ndarray)
     signal_current_configuration = Signal(Configuration)
-    signal_register_current_fov = Signal(float,float)
+    signal_register_current_fov = Signal(float, float)
     detection_stats = Signal(object)
     signal_stitcher = Signal(str)
+    stitching_preview_update = Signal(np.ndarray, int, int, int, str)
+    stitching_preview_init = Signal(int, int, object)
 
     def __init__(self,camera,navigationController,liveController,autofocusController,configurationManager,usb_spectrometer=None,scanCoordinates=None,parent=None):
         QObject.__init__(self)
@@ -2152,6 +2163,9 @@ class MultiPointController(QObject):
         self.multiPointWorker.spectrum_to_display.connect(self.slot_spectrum_to_display)
         self.multiPointWorker.signal_current_configuration.connect(self.slot_current_configuration,type=Qt.BlockingQueuedConnection)
         self.multiPointWorker.signal_register_current_fov.connect(self.slot_register_current_fov)
+        self.multiPointWorker.stitching_preview_init.connect(self.slot_stitching_preview_init)
+        self.multiPointWorker.stitching_preview_update.connect(self.slot_stitching_preview_update)
+
         # self.thread.finished.connect(self.thread.deleteLater)
         self.thread.finished.connect(self.thread.quit)
         # start the thread
@@ -2199,21 +2213,26 @@ class MultiPointController(QObject):
     def slot_detection_stats(self, stats):
         self.detection_stats.emit(stats)
 
-    def slot_image_to_display(self,image):
+    def slot_image_to_display(self, image):
         self.image_to_display.emit(image)
 
-    def slot_spectrum_to_display(self,data):
+    def slot_spectrum_to_display(self, data):
         self.spectrum_to_display.emit(data)
 
-    def slot_image_to_display_multi(self,image,illumination_source):
-        self.image_to_display_multi.emit(image,illumination_source)
+    def slot_image_to_display_multi(self, image, illumination_source):
+        self.image_to_display_multi.emit(image, illumination_source)
 
-    def slot_current_configuration(self,configuration):
+    def slot_current_configuration(self, configuration):
         self.signal_current_configuration.emit(configuration)
 
-    def slot_register_current_fov(self,x_mm,y_mm):
+    def slot_register_current_fov(self, x_mm, y_mm):
         self.signal_register_current_fov.emit(x_mm,y_mm)
 
+    def slot_stitching_preview_update(self, image, i, j, k, channel):
+        self.stitching_preview_update.emit(image, i, j, k, channel)
+
+    def slot_stitching_preview_init(self, image_height, image_width, dtype):
+        self.stitching_preview_init.emit(image_height, image_width, dtype)
 
 class TrackingController(QObject):
 
