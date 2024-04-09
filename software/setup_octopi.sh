@@ -62,14 +62,17 @@ install_cuda_linux() {
     echo "Setting up packages for CUDA support..."
     pip install -U cuda-python cupy-cuda12x
     #pip install nvidia-cublas-cu12==12.1
-    conda install -y pytorch torchvision torchaudio cudatoolkit -c pytorch
+    
+    conda install -y pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+
+
 }
 
 
 # Define a function to update JAX for CPU on macOS with the specific version
 install_mac() {
     echo "Installing packages for GPU on macOS..."
-    conda install pytorch torchvision torchaudio -c pytorch -y
+    pip install torch torchvision torchaudio
 }
 
 # Conditional update of JAX based on the operating system
