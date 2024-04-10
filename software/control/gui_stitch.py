@@ -370,7 +370,7 @@ class OctopiGUI(QMainWindow):
             dock_wellSelection.showTitleBar()
             dock_wellSelection.addWidget(self.wellSelectionWidget, 0 , 0)
             #dock_wellSelection.addWidget(self.navigationViewer, 0, 1)
-            dock_wellSelection.addWidget(self.stitchingPreviewWidget, 0, 1)
+            #dock_wellSelection.addWidget(self.stitchingPreviewWidget, 0, 1)
             dock_wellSelection.setFixedHeight(dock_wellSelection.minimumSizeHint().height())
             dock_controlPanel = dock.Dock('Controls', autoOrientation = False)
             # dock_controlPanel.showTitleBar()
@@ -519,6 +519,7 @@ class OctopiGUI(QMainWindow):
 
             # self.imageDisplayWindow_focus.widget
             self.imageDisplayTabs.addTab(laserfocus_dockArea,"Laser-based Focus")
+            self.imageDisplayTabs.addTab(self.stitchingPreviewWidget, "Stitching Preview")
 
             # connections
             self.liveControlWidget_focus_camera.signal_newExposureTime.connect(self.cameraSettingWidget_focus_camera.set_exposure_time)
@@ -549,7 +550,6 @@ class OctopiGUI(QMainWindow):
 
     def startStitcher(self, acquisition_path):
         # Fetch settings from StitcherWidget controls
-
         apply_flatfield = self.stitcherWidget.applyFlatfieldCheck.isChecked()
         use_registration = self.stitcherWidget.useRegistrationCheck.isChecked()
         registration_channel = self.stitcherWidget.registrationChannelCombo.currentText()

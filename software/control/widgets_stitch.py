@@ -2416,7 +2416,7 @@ class StitcherWidget(QFrame):
             else:
                 napari_viewer.open(self.output_path, contrast_limits=self.contrast_limits)
 
-            colors = ['gray', 'cyan', 'magma', 'red', 'green', 'blue', 'magenta', 'yellow',
+            colors = ['gray', 'cyan', 'magma', 'green', 'red', 'blue', 'magenta', 'yellow',
                       'bop orange', 'bop blue', 'gray', 'magma', 'viridis', 'inferno'] #etc
             for i, layer in enumerate(napari_viewer.layers):
                 #layer.contrast_limits = self.contrast_limits
@@ -2437,62 +2437,151 @@ class StitchingPreviewWidget(QFrame):
         self.Ny = 1
         self.Nx = 1
         self.channels = []
-        self.dtype = None
+        self.dtype = np.uint8
+        self.zoom = 1.0
+        self.centerY = 0
+        self.centerX = 0
         self.initUI()
 
     def initUI(self):
-        self.layout = QVBoxLayout(self)
+        self.layout = QHBoxLayout(self)
 
-        class ImageLabelCoords(QLabel):
-            def __init__(self, text="coords", parent=None):
+        class ImageLabel(QLabel):
+            mouseCoordinates = Signal(float, float)
+            centerCoordinates = Signal(float, float)
+
+            def __init__(self, title="", parent=None):
                 super().__init__(parent)
-                self.setText(text)  # Default text set here
-                self.setMouseTracking(True)  # Enable mouse tracking
-            
+                self.setText(title)
+                self.setAlignment(Qt.AlignCenter)
+                self.setMouseTracking(True)
+
             def mouseMoveEvent(self, event):
-                # Get mouse position and convert to original image coordinates
-                if self.pixmap() is not None:
-                    pixmapSize = self.pixmap().size()
-                    scaleX = self.parent().image_width / pixmapSize.width()
-                    scaleY = self.parent().image_height / pixmapSize.height()
-                    originalX = event.x() * scaleX
-                    originalY = event.y() * scaleY
-                    self.parent().displayMouseCoordinates(originalX, originalY)
-                else:
-                    self.parent().displayMouseCoordinates(-1, -1)
-        
+                canvasX, canvasY = self.displayToCanvasCoordinates(event.x(), event.y())
+                if canvasX is not None and canvasY is not None:
+                    self.mouseCoordinates.emit(canvasX, canvasY)
+
+            def mouseDoubleClickEvent(self, event):
+                canvasX, canvasY = self.displayToCanvasCoordinates(event.x(), event.y())
+                if canvasX is not None and canvasY is not None:
+                    self.centerCoordinates.emit(canvasX, canvasY)
+
+            def displayToCanvasCoordinates(self, displayX, displayY):
+                parent = self.parent()
+                pixmap = self.pixmap()
+
+                # Ensure the pixmap is valid
+                if pixmap is None or pixmap.isNull():
+                    return None, None
+
+                # Calculate the expected display size of the image based on zoom
+                displayedImageWidth = parent.image_width * parent.zoom
+                displayedImageHeight = parent.image_height * parent.zoom
+
+                # Calculate the offset of the displayed image within the label
+                offsetX = (self.width() - displayedImageWidth) / 2
+                offsetY = (self.height() - displayedImageHeight) / 2
+
+                # Adjust the event coordinates based on the offset and zoom scale
+                adjustedX = (displayX - offsetX) / parent.zoom
+                adjustedY = (displayY - offsetY) / parent.zoom
+
+                # Convert the adjusted coordinates back to canvas coordinates
+                # This involves considering the current centering relative to the original dimensions
+                canvasX = adjustedX + (parent.centerX - (parent.image_width / 2))
+                canvasY = adjustedY + (parent.centerY - (parent.image_height / 2))
+
+                return canvasX, canvasY
+
         #self.imageLabel = QLabel("Stitching Preview")
-        self.imageLabel = ImageLabelCoords("Stitching Preview", self)
-        self.imageLabel.setAlignment(Qt.AlignCenter)
-        self.coordinatesLabel = QLabel(self)
+        self.imageLabel = ImageLabel("Stitching Preview", self)
+        self.coordinatesLabel = QLabel("Coordinates\n(n/a, n/a)")
         self.coordinatesLabel.setAlignment(Qt.AlignCenter)
+        self.zoomInButton = QPushButton("Zoom In", self)
+        self.zoomOutButton = QPushButton("Zoom Out", self)
+        self.zoomResetButton = QPushButton("Reset Zoom", self)
+        
+        # zoomLayout = QHBoxLayout()
+        # zoomLayout.addWidget(self.zoomInButton)
+        # zoomLayout.addWidget(self.zoomOutButton)
+        # zoomLayout.addWidget(self.zoomResetButton)
 
         self.zPlaneDropdownLabel = QLabel("Z-Plane:")
-        self.zPlaneDropdownLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.zPlaneDropdownLabel.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
         self.zPlaneDropdown = QComboBox()
         self.zPlaneDropdown.addItem("0")
         self.zPlaneDropdown.setEnabled(False)
         self.channelDropdownLabel = QLabel("Channel:")
-        self.channelDropdownLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.channelDropdownLabel.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
         self.channelDropdown = QComboBox()
         self.channelDropdown.setEnabled(False)
         self.zPlaneDropdown.currentIndexChanged.connect(self.displayCurrentCanvas)
         self.channelDropdown.currentIndexChanged.connect(self.displayCurrentCanvas)
-        dropdownsLayout = QHBoxLayout()
-        dropdownsLayout.addWidget(self.zPlaneDropdownLabel)
-        dropdownsLayout.addWidget(self.zPlaneDropdown)
-        dropdownsLayout.addWidget(self.channelDropdownLabel)
-        dropdownsLayout.addWidget(self.channelDropdown)
-        self.layout.addWidget(self.imageLabel)
-        self.layout.addWidget(self.coordinatesLabel)
-        self.layout.addLayout(dropdownsLayout)
+
+        self.coordXInput = QLineEdit(self)
+        self.coordYInput = QLineEdit(self)
+        self.centerButton = QPushButton("Center Image", self)
+
+        dropdownsLayout = QVBoxLayout()
+        
+        line1 = QHBoxLayout()
+        line1.addWidget(self.zPlaneDropdownLabel)
+        line1.addWidget(self.zPlaneDropdown)
+        line2 = QHBoxLayout()
+        line2.addWidget(self.channelDropdownLabel)
+        line2.addWidget(self.channelDropdown)
+        
+        dropdownsLayout.addLayout(line1)
+        dropdownsLayout.addLayout(line2)
+        dropdownsLayout.addWidget(self.coordinatesLabel)
+        #dropdownsLayout.addLayout(zoomLayout)
+        line4 = QHBoxLayout()
+        line4.addWidget(self.zoomInButton)
+        line4.addWidget(self.zoomOutButton)
+        dropdownsLayout.addLayout(line4)
+        dropdownsLayout.addWidget(self.zoomResetButton)
+
+
+        # Layout for coordinate inputs
+        line6 = QHBoxLayout()
+        line6.addWidget(QLabel("Center X:"))
+        line6.addWidget(self.coordXInput)
+        dropdownsLayout.addLayout(line6)
+        line7 = QHBoxLayout()
+        line7.addWidget(QLabel("Center Y:"))
+        line7.addWidget(self.coordYInput)
+        dropdownsLayout.addLayout(line7)
+        dropdownsLayout.addWidget(self.centerButton)
+
+        dropdownsContainer = QWidget()
+        dropdownsContainer.setLayout(dropdownsLayout)
+        dropdownsContainer.setFixedWidth(180)
+        dropdownsContainer.setStyleSheet("background-color: #F0F0F0")
+
+        self.layout.addWidget(self.imageLabel, 8)
+        self.layout.addWidget(dropdownsContainer, 1)
+
+        self.imageLabel.mouseCoordinates.connect(self.displayMouseCoordinates)
+        self.centerButton.clicked.connect(self.centerPreview)
+        self.imageLabel.centerCoordinates.connect(self.centerPreview)
+        self.zoomInButton.clicked.connect(lambda: self.adjustZoom(1.25))
+        self.zoomOutButton.clicked.connect(lambda: self.adjustZoom(0.8))
+        self.zoomResetButton.clicked.connect(lambda: self.setZoom(1.0))
 
     def displayMouseCoordinates(self, x, y):
         # This method updates the coordinates label with the mouse position
         if x >= 0 and y >= 0:  # Valid coordinates
-            self.coordinatesLabel.setText(f"Original Coordinates: ({x:.0f}, {y:.0f}, {self.currentZPlane()})")
+            self.coordinatesLabel.setText(f"Coordinates\n({x:.0f}, {y:.0f}, {self.currentZPlane()})")
         else:
-            self.coordinatesLabel.setText("Coordinates: (n/a, n/a)")
+            self.coordinatesLabel.setText("Coordinates\n(n/a, n/a)")
+
+    def adjustZoom(self, factor):
+        self.zoom *= factor
+        self.imageLabel.setZoomFactor(self.zoom)
+
+    def setZoom(self, factor):
+        self.zoom = factor
+        self.imageLabel.setZoomFactor(self.zoom)
 
     def updateChannels(self, channels):
         self.channels = channels
@@ -2525,12 +2614,18 @@ class StitchingPreviewWidget(QFrame):
     def updatePreview(self, image, i, j, k, channel):
         print("image shape", image.shape)
         canvasKey = (k, channel)
-        if canvasKey in self.canvases:
-            y_start = i * self.image_height
-            x_start = j * self.image_width
-            self.canvases[canvasKey][y_start:y_start + image.shape[0], x_start:x_start + image.shape[1]] = image
-            if self.currentZPlane() == k and self.currentChannel() == channel:
-                self.displayCurrentCanvas()
+        if canvasKey not in self.canvases:
+            self.canvases[canvasKey] = np.zeros((self.imageHeight * self.Ny, self.imageWidth * self.Nx, 3), dtype=self.dtype)
+        
+        y_start = i * self.image_height
+        x_start = j * self.image_width
+        self.canvases[canvasKey][y_start:y_start + image.shape[0], x_start:x_start + image.shape[1]] = image
+        self.displayCurrentCanvas()
+
+    def centerPreview(self, centerX, centerY):
+        self.centerX = centerX
+        self.centerY = centerY
+        self.displayCurrentCanvas()
 
     def displayCurrentCanvas(self):
         zPlane = self.currentZPlane()
@@ -2552,10 +2647,10 @@ class StitchingPreviewWidget(QFrame):
                 raise ValueError("Unsupported image data type")
             qImage = QImage(canvas.data, canvas.shape[1], canvas.shape[0], bytes_per_line, qformat)
             pixmap = QPixmap.fromImage(qImage)
-            scaledPixmap = pixmap.scaled(self.imageLabel.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
+            ## apply logic to center image based on centerX and centerY
+            scaledPixmap = pixmap.scaled(int(self.imageLabel.width() * self.zoom), int(self.imageLabel.height() * self.zoom), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            ## shift by scaled amount on window so that the correct canvasX,Y is centered
             self.imageLabel.setPixmap(scaledPixmap)
-            #self.imageLabel.setPixmap(pixmap)
 
     def resizeEvent(self, event):
         self.displayCurrentCanvas()  # Update the display to fit the new size
