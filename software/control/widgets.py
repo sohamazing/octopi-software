@@ -1,22 +1,23 @@
 # set QT_API environment variable
 import os 
 os.environ["QT_API"] = "pyqt5"
-import qtpy
-
-import locale
 
 # qt libraries
+import qtpy
 from qtpy.QtCore import *
 from qtpy.QtWidgets import *
 from qtpy.QtGui import *
-
 import pyqtgraph as pg
 
+# other libs
 import pandas as pd
-
+import locale
+import napari
 from datetime import datetime
 
+# control software
 from control._def import *
+
 
 class WrapperWindow(QMainWindow):
     def __init__(self, content_widget, *args, **kwargs):
@@ -30,6 +31,7 @@ class WrapperWindow(QMainWindow):
 
     def closeForReal(self, event):
         super().closeEvent(event)
+
 
 class CollapsibleGroupBox(QGroupBox):
     def __init__(self, title):
@@ -47,6 +49,7 @@ class CollapsibleGroupBox(QGroupBox):
 
     def toggle_content(self,state):
         self.content_widget.setVisible(state)
+
 
 class ConfigEditorForAcquisitions(QDialog):
     def __init__(self, configManager, only_z_offset=True):
@@ -179,7 +182,6 @@ class ConfigEditorForAcquisitions(QDialog):
             self.init_ui(only_z_offset)
 
 
-
 class ConfigEditor(QDialog):
     def __init__(self, config):
         super().__init__()
@@ -306,6 +308,7 @@ class ConfigEditorBackwardsCompatible(ConfigEditor):
             pass
         self.close()
 
+
 class SpinningDiskConfocalWidget(QWidget):
     def __init__(self, xlight, config_manager=None):
         super(SpinningDiskConfocalWidget,self).__init__()
@@ -426,6 +429,7 @@ class SpinningDiskConfocalWidget(QWidget):
         self.xlight.set_dichroic(selected_pos)
         self.enable_all_buttons()
   
+
 class ObjectivesWidget(QWidget):
     def __init__(self, objective_store):
         super(ObjectivesWidget, self).__init__()
@@ -461,6 +465,7 @@ class ObjectivesWidget(QWidget):
         #text = "\n".join([f"{key}: {value}" for key, value in objective_data.items()])
         self.objectiveStore.current_objective = selected_key
         #self.text_browser.setPlainText(text)
+
 
 class FocusMapWidget(QWidget):
 
@@ -532,8 +537,6 @@ class FocusMapWidget(QWidget):
         except IndexError:
             pass
 
-
-
     def enable_focusmap(self):
         self.disable_all_buttons()
         if self.autofocusController.use_focus_map == False:
@@ -554,6 +557,7 @@ class FocusMapWidget(QWidget):
             pass
         self.update_focusmap_display()
         self.enable_all_buttons()
+
 
 class CameraSettingsWidget(QFrame):
 
@@ -959,6 +963,7 @@ class LiveControlWidget(QFrame):
         self.dropdown_triggerManu.setCurrentText(trigger_mode)
         self.liveController.set_trigger_mode(self.dropdown_triggerManu.currentText())
 
+
 class RecordingWidget(QFrame):
     def __init__(self, streamHandler, imageSaver, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1063,6 +1068,7 @@ class RecordingWidget(QFrame):
         self.streamHandler.stop_recording()
         self.btn_setSavingDir.setEnabled(True)
 
+
 class NavigationWidget(QFrame):
     def __init__(self, navigationController, slidePositionController=None, main=None, widget_configuration = 'full', *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1077,6 +1083,7 @@ class NavigationWidget(QFrame):
         self.label_Xpos = QLabel()
         self.label_Xpos.setNum(0)
         self.label_Xpos.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        #self.label_Xpos.setDecimals(3)
         self.entry_dX = QDoubleSpinBox()
         self.entry_dX.setMinimum(0) 
         self.entry_dX.setMaximum(25) 
@@ -1084,9 +1091,9 @@ class NavigationWidget(QFrame):
         self.entry_dX.setValue(0)
         self.entry_dX.setDecimals(3)
         self.entry_dX.setKeyboardTracking(False)
-        self.btn_moveX_forward = QPushButton('Forward')
+        self.btn_moveX_forward = QPushButton('Right')
         self.btn_moveX_forward.setDefault(False)
-        self.btn_moveX_backward = QPushButton('Backward')
+        self.btn_moveX_backward = QPushButton('Left')
         self.btn_moveX_backward.setDefault(False)
 
         self.btn_home_X = QPushButton('Home X')
@@ -1101,6 +1108,7 @@ class NavigationWidget(QFrame):
         self.label_Ypos = QLabel()
         self.label_Ypos.setNum(0)
         self.label_Ypos.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        #self.label_Ypos.setDecimals(3)
         self.entry_dY = QDoubleSpinBox()
         self.entry_dY.setMinimum(0)
         self.entry_dY.setMaximum(25)
@@ -1108,9 +1116,9 @@ class NavigationWidget(QFrame):
         self.entry_dY.setValue(0)
         self.entry_dY.setDecimals(3)
         self.entry_dY.setKeyboardTracking(False)
-        self.btn_moveY_forward = QPushButton('Forward')
+        self.btn_moveY_forward = QPushButton('Down')
         self.btn_moveY_forward.setDefault(False)
-        self.btn_moveY_backward = QPushButton('Backward')
+        self.btn_moveY_backward = QPushButton('Up')
         self.btn_moveY_backward.setDefault(False)
 
         self.btn_home_Y = QPushButton('Home Y')
@@ -1122,6 +1130,7 @@ class NavigationWidget(QFrame):
         self.label_Zpos = QLabel()
         self.label_Zpos.setNum(0)
         self.label_Zpos.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        #self.label_Zpos.setDecimals(3)
         self.entry_dZ = QDoubleSpinBox()
         self.entry_dZ.setMinimum(0) 
         self.entry_dZ.setMaximum(1000) 
@@ -1129,9 +1138,9 @@ class NavigationWidget(QFrame):
         self.entry_dZ.setValue(0)
         self.entry_dZ.setDecimals(3)
         self.entry_dZ.setKeyboardTracking(False)
-        self.btn_moveZ_forward = QPushButton('Forward')
+        self.btn_moveZ_forward = QPushButton('Out')
         self.btn_moveZ_forward.setDefault(False)
-        self.btn_moveZ_backward = QPushButton('Backward')
+        self.btn_moveZ_backward = QPushButton('In')
         self.btn_moveZ_backward.setDefault(False)
 
         self.btn_home_Z = QPushButton('Home Z')
@@ -1142,60 +1151,65 @@ class NavigationWidget(QFrame):
 
         self.btn_load_slide = QPushButton('To Slide Loading Position')
         
-        grid_line0 = QGridLayout()
-        grid_line0.addWidget(QLabel('X (mm)'), 0,0)
-        grid_line0.addWidget(self.label_Xpos, 0,1)
-        grid_line0.addWidget(self.entry_dX, 0,2)
-        grid_line0.addWidget(self.btn_moveX_forward, 0,3)
-        grid_line0.addWidget(self.btn_moveX_backward, 0,4)
-        
-        grid_line1 = QGridLayout()
-        grid_line1.addWidget(QLabel('Y (mm)'), 0,0)
-        grid_line1.addWidget(self.label_Ypos, 0,1)
-        grid_line1.addWidget(self.entry_dY, 0,2)
-        grid_line1.addWidget(self.btn_moveY_forward, 0,3)
-        grid_line1.addWidget(self.btn_moveY_backward, 0,4)
+        grid_top = QGridLayout()
+        # Create QLabel objects for X, Y, and Z with the desired alignment
+        label_X = QLabel('X(mm)')
+        label_X.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        label_Y = QLabel('Y(mm)')
+        label_Y.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        label_Z = QLabel('Z(um)')
+        label_Z.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
-        grid_line2 = QGridLayout()
-        grid_line2.addWidget(QLabel('Z (um)'), 0,0)
-        grid_line2.addWidget(self.label_Zpos, 0,1)
-        grid_line2.addWidget(self.entry_dZ, 0,2)
-        grid_line2.addWidget(self.btn_moveZ_forward, 0,3)
-        grid_line2.addWidget(self.btn_moveZ_backward, 0,4)
-        
-        grid_line3 = QHBoxLayout()
+        # Add the QLabel objects to the grid layout in the appropriate positions
+        grid_top.addWidget(label_X, 0, 0)
+        grid_top.addWidget(self.label_Xpos, 0, 1)
+        grid_top.addWidget(self.entry_dX, 0, 2)
+        grid_top.addWidget(self.btn_moveX_forward, 0, 4)
+        grid_top.addWidget(self.btn_moveX_backward, 0, 3)
 
-        grid_line3_buttons = QGridLayout()
+        grid_top.addWidget(label_Y, 1, 0)
+        grid_top.addWidget(self.label_Ypos, 1, 1)
+        grid_top.addWidget(self.entry_dY, 1, 2)
+        grid_top.addWidget(self.btn_moveY_forward, 1, 4)
+        grid_top.addWidget(self.btn_moveY_backward, 1, 3)
+
+        grid_top.addWidget(label_Z, 2, 0)
+        grid_top.addWidget(self.label_Zpos, 2, 1)
+        grid_top.addWidget(self.entry_dZ, 2, 2)
+        grid_top.addWidget(self.btn_moveZ_forward, 2, 4)
+        grid_top.addWidget(self.btn_moveZ_backward, 2, 3)
+
+        grid_bottom = QHBoxLayout()
+        grid_bottom_buttons = QGridLayout()
         if self.widget_configuration == 'full':
-            grid_line3_buttons.addWidget(self.btn_zero_X, 0,3)
-            grid_line3_buttons.addWidget(self.btn_zero_Y, 0,4)
-            grid_line3_buttons.addWidget(self.btn_zero_Z, 0,5)
-            grid_line3_buttons.addWidget(self.btn_home_X, 0,0)
-            grid_line3_buttons.addWidget(self.btn_home_Y, 0,1)
-            grid_line3_buttons.addWidget(self.btn_home_Z, 0,2)
+            grid_bottom_buttons.addWidget(self.btn_zero_X, 0,3)
+            grid_bottom_buttons.addWidget(self.btn_zero_Y, 0,4)
+            grid_bottom_buttons.addWidget(self.btn_zero_Z, 0,5)
+            grid_bottom_buttons.addWidget(self.btn_home_X, 0,0)
+            grid_bottom_buttons.addWidget(self.btn_home_Y, 0,1)
+            grid_bottom_buttons.addWidget(self.btn_home_Z, 0,2)
         elif self.widget_configuration == 'malaria':
-            grid_line3_buttons.addWidget(self.btn_load_slide, 0,0,1,2)
-            grid_line3_buttons.addWidget(self.btn_home_Z, 0,2,1,1)
-            grid_line3_buttons.addWidget(self.btn_zero_Z, 0,3,1,1)
+            grid_bottom_buttons.addWidget(self.btn_load_slide, 0,0,1,2)
+            grid_bottom_buttons.addWidget(self.btn_home_Z, 0,2,1,1)
+            grid_bottom_buttons.addWidget(self.btn_zero_Z, 0,3,1,1)
         elif self.widget_configuration == '384 well plate':
-            grid_line3_buttons.addWidget(self.btn_load_slide, 0,0,1,2)
-            grid_line3_buttons.addWidget(self.btn_home_Z, 0,2,1,1)
-            grid_line3_buttons.addWidget(self.btn_zero_Z, 0,3,1,1)
+            grid_bottom_buttons.addWidget(self.btn_load_slide, 0,0,1,2)
+            grid_bottom_buttons.addWidget(self.btn_home_Z, 0,2,1,1)
+            grid_bottom_buttons.addWidget(self.btn_zero_Z, 0,3,1,1)
         elif self.widget_configuration == '96 well plate':
-            grid_line3_buttons.addWidget(self.btn_load_slide, 0,0,1,2)
-            grid_line3_buttons.addWidget(self.btn_home_Z, 0,2,1,1)
-            grid_line3_buttons.addWidget(self.btn_zero_Z, 0,3,1,1)
+            grid_bottom_buttons.addWidget(self.btn_load_slide, 0,0,1,2)
+            grid_bottom_buttons.addWidget(self.btn_home_Z, 0,2,1,1)
+            grid_bottom_buttons.addWidget(self.btn_zero_Z, 0,3,1,1)
 
-        grid_line3.addLayout(grid_line3_buttons)
+        grid_bottom.addLayout(grid_bottom_buttons)
 
-        grid_line3.addWidget(self.checkbox_clickToMove)
+        grid_bottom.addWidget(self.checkbox_clickToMove)
         
 
-        self.grid = QGridLayout()
-        self.grid.addLayout(grid_line0,0,0)
-        self.grid.addLayout(grid_line1,1,0)
-        self.grid.addLayout(grid_line2,2,0)
-        self.grid.addLayout(grid_line3,3,0)
+        self.grid = QVBoxLayout()
+        self.grid.addLayout(grid_top)
+        self.grid.addLayout(grid_bottom)
+
         self.setLayout(self.grid)
 
         self.entry_dX.valueChanged.connect(self.set_deltaX)
@@ -1219,7 +1233,7 @@ class NavigationWidget(QFrame):
         self.checkbox_clickToMove.stateChanged.connect(self.navigationController.set_flag_click_to_move)
 
         self.btn_load_slide.clicked.connect(self.switch_position)
-        self.btn_load_slide.setStyleSheet("background-color: #C2C2FF");
+        self.btn_load_slide.setStyleSheet("background-color: #C2C2FF")
         
     def move_x_forward(self):
         self.navigationController.move_x(self.entry_dX.value())
@@ -1294,7 +1308,7 @@ class NavigationWidget(QFrame):
 
     def slot_slide_loading_position_reached(self):
         self.slide_position = 'loading'
-        self.btn_load_slide.setStyleSheet("background-color: #C2FFC2");
+        self.btn_load_slide.setStyleSheet("background-color: #C2FFC2")
         self.btn_load_slide.setText('To Scanning Position')
         self.btn_moveX_forward.setEnabled(False)
         self.btn_moveX_backward.setEnabled(False)
@@ -1306,7 +1320,7 @@ class NavigationWidget(QFrame):
 
     def slot_slide_scanning_position_reached(self):
         self.slide_position = 'scanning'
-        self.btn_load_slide.setStyleSheet("background-color: #C2C2FF");
+        self.btn_load_slide.setStyleSheet("background-color: #C2C2FF")
         self.btn_load_slide.setText('To Loading Position')
         self.btn_moveX_forward.setEnabled(True)
         self.btn_moveX_backward.setEnabled(True)
@@ -1322,6 +1336,7 @@ class NavigationWidget(QFrame):
         else:
             self.slidePositionController.move_to_slide_scanning_position()
         self.btn_load_slide.setEnabled(False)
+
 
 class DACControWidget(QFrame):
     def __init__(self, microcontroller ,*args, **kwargs):
@@ -1386,6 +1401,7 @@ class DACControWidget(QFrame):
     def set_DAC1(self,value):
         self.microcontroller.analog_write_onboard_DAC(1,int(value*65535/100))
 
+
 class AutoFocusWidget(QFrame):
     def __init__(self, autofocusController, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1417,16 +1433,23 @@ class AutoFocusWidget(QFrame):
         self.btn_autofocus.setChecked(False)
 
         # layout
-        grid_line0 = QGridLayout()
-        grid_line0.addWidget(QLabel('delta Z (um)'), 0,0)
-        grid_line0.addWidget(self.entry_delta, 0,1)
-        grid_line0.addWidget(QLabel('N Z planes'), 0,2)
-        grid_line0.addWidget(self.entry_N, 0,3)
-        grid_line0.addWidget(self.btn_autofocus, 0,4)
+        grid_line0 = QHBoxLayout(self)
 
-        self.grid = QGridLayout()
-        self.grid.addLayout(grid_line0,0,0)
-        self.setLayout(self.grid)
+        # Create QLabel objects for Delta Z and Number of Z-Planes
+        label_deltaZ = QLabel('\u0394Z(um):')
+        label_deltaZ.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        label_numZPlanes = QLabel('#Z-Planes:')
+        label_numZPlanes.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        # Add the QLabel objects and the corresponding entries to the horizontal layout
+        grid_line0.addWidget(label_deltaZ)
+        grid_line0.addWidget(self.entry_delta)
+        grid_line0.addWidget(label_numZPlanes)
+        grid_line0.addWidget(self.entry_N)
+        grid_line0.addWidget(self.btn_autofocus)
+
+        #self.grid.addLayout(grid_line0,0,0)
+        self.setLayout(grid_line0)
         
         # connections
         self.btn_autofocus.clicked.connect(lambda : self.autofocusController.autofocus(False))
@@ -1442,6 +1465,7 @@ class AutoFocusWidget(QFrame):
 
     def autofocus_is_finished(self):
         self.btn_autofocus.setChecked(False)
+
 
 class StatsDisplayWidget(QFrame):
     def __init__(self, *args, **kwargs):
@@ -1476,10 +1500,16 @@ class StatsDisplayWidget(QFrame):
 
 
 class MultiPointWidget(QFrame):
+    signal_display_stitcher_widget = Signal(bool)
+    signal_channel_selected = Signal(list)
+    signal_Nx_Ny_Nz = Signal(int, int, int)
+
     def __init__(self, multipointController, configurationManager = None, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.multipointController = multipointController
         self.configurationManager = configurationManager
+        #self.wellSelectionWidget = wellSelctionWidget
+        self.well_selected = False
         self.base_path_is_set = False
         self.add_components()
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
@@ -1568,16 +1598,20 @@ class MultiPointWidget(QFrame):
         self.checkbox_withAutofocus.setChecked(MULTIPOINT_AUTOFOCUS_ENABLE_BY_DEFAULT)
         self.multipointController.set_af_flag(MULTIPOINT_AUTOFOCUS_ENABLE_BY_DEFAULT)
 
-        self.checkbox_genFocusMap = QCheckBox('Generate focus map')
+        self.checkbox_genFocusMap = QCheckBox('Create Focus Map')
         self.checkbox_genFocusMap.setChecked(False)
 
         self.checkbox_withReflectionAutofocus = QCheckBox('Reflection AF')
         self.checkbox_withReflectionAutofocus.setChecked(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
 
+        self.checkbox_stitchOutput = QCheckBox('Stitch Output')
+        self.checkbox_stitchOutput.setChecked(False)
+
         self.multipointController.set_reflection_af_flag(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
         self.btn_startAcquisition = QPushButton('Start Acquisition')
         self.btn_startAcquisition.setCheckable(True)
         self.btn_startAcquisition.setChecked(False)
+        self.btn_startAcquisition.setStyleSheet("background-color: #C2C2FF")
 
         # layout
         grid_line0 = QGridLayout()
@@ -1590,29 +1624,54 @@ class MultiPointWidget(QFrame):
         grid_line1.addWidget(self.lineEdit_experimentID,0,1)
 
         grid_line2 = QGridLayout()
-        grid_line2.addWidget(QLabel('dx (mm)'), 0,0)
-        grid_line2.addWidget(self.entry_deltaX, 0,1)
-        grid_line2.addWidget(QLabel('Nx'), 0,2)
-        grid_line2.addWidget(self.entry_NX, 0,3)
-        grid_line2.addWidget(QLabel('dy (mm)'), 0,4)
-        grid_line2.addWidget(self.entry_deltaY, 0,5)
-        grid_line2.addWidget(QLabel('Ny'), 0,6)
-        grid_line2.addWidget(self.entry_NY, 0,7)
+        # Create QLabel objects and set their alignment
+        label_dx = QLabel('dx(mm)')
+        label_dx.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        label_Nx = QLabel('Nx')
+        label_Nx.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        grid_line2.addWidget(QLabel('dz (um)'), 1,0)
-        grid_line2.addWidget(self.entry_deltaZ, 1,1)
-        grid_line2.addWidget(QLabel('Nz'), 1,2)
-        grid_line2.addWidget(self.entry_NZ, 1,3)
-        grid_line2.addWidget(QLabel('dt (s)'), 1,4)
-        grid_line2.addWidget(self.entry_dt, 1,5)
-        grid_line2.addWidget(QLabel('Nt'), 1,6)
-        grid_line2.addWidget(self.entry_Nt, 1,7)
+        label_dy = QLabel('dy(mm)')
+        label_dy.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        label_Ny = QLabel('Ny')
+        label_Ny.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        label_dz = QLabel('dz(um)')
+        label_dz.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        label_Nz = QLabel('Nz')
+        label_Nz.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        label_dt = QLabel('dt(s)')
+        label_dt.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        label_Nt = QLabel('Nt')
+        label_Nt.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        # Add the QLabel objects and the corresponding entries to the grid layout
+        grid_line2.addWidget(label_dx, 0, 0)
+        grid_line2.addWidget(self.entry_deltaX, 0, 1)
+        grid_line2.addWidget(label_Nx, 0, 2)
+        grid_line2.addWidget(self.entry_NX, 0, 3)
+
+        grid_line2.addWidget(label_dy, 0, 4)
+        grid_line2.addWidget(self.entry_deltaY, 0, 5)
+        grid_line2.addWidget(label_Ny, 0, 6)
+        grid_line2.addWidget(self.entry_NY, 0, 7)
+
+        grid_line2.addWidget(label_dz, 1, 0)
+        grid_line2.addWidget(self.entry_deltaZ, 1, 1)
+        grid_line2.addWidget(label_Nz, 1, 2)
+        grid_line2.addWidget(self.entry_NZ, 1, 3)
+
+        grid_line2.addWidget(label_dt, 1, 4)
+        grid_line2.addWidget(self.entry_dt, 1, 5)
+        grid_line2.addWidget(label_Nt, 1, 6)
+        grid_line2.addWidget(self.entry_Nt, 1, 7)
 
         grid_af = QVBoxLayout()
         grid_af.addWidget(self.checkbox_withAutofocus)
         grid_af.addWidget(self.checkbox_genFocusMap)
         if SUPPORT_LASER_AUTOFOCUS:
             grid_af.addWidget(self.checkbox_withReflectionAutofocus)
+        grid_af.addWidget(self.checkbox_stitchOutput)
 
         grid_line3 = QHBoxLayout()
         grid_line3.addWidget(self.list_configurations)
@@ -1642,9 +1701,13 @@ class MultiPointWidget(QFrame):
         self.checkbox_withAutofocus.stateChanged.connect(self.multipointController.set_af_flag)
         self.checkbox_withReflectionAutofocus.stateChanged.connect(self.multipointController.set_reflection_af_flag)
         self.checkbox_genFocusMap.stateChanged.connect(self.multipointController.set_gen_focus_map_flag)
+        self.checkbox_stitchOutput.toggled.connect(self.displayStitcherWidget)
         self.btn_setSavingDir.clicked.connect(self.set_saving_dir)
+        self.list_configurations.itemSelectionChanged.connect(self.emit_selected_channels)
+
+        
         self.btn_startAcquisition.clicked.connect(self.toggle_acquisition)
-        self.multipointController.acquisitionFinished.connect(self.acquisition_is_finished)
+        self.multipointController.acquisition_finished.connect(self.acquisition_is_finished)
 
     def set_deltaX(self,value):
         mm_per_ustep = SCREW_PITCH_X_MM/(self.multipointController.navigationController.x_microstepping*FULLSTEPS_PER_REV_X) # to implement a get_x_microstepping() in multipointController
@@ -1671,11 +1734,30 @@ class MultiPointWidget(QFrame):
         self.lineEdit_savingDir.setText(save_dir_base)
         self.base_path_is_set = True
 
+    def set_well_selected(self):
+        self.well_selected = True
+
+    def emit_selected_channels(self):
+        selected_channels = [item.text() for item in self.list_configurations.selectedItems()]
+        self.signal_channel_selected.emit(selected_channels)
+
     def toggle_acquisition(self,pressed):
         if self.base_path_is_set == False:
             self.btn_startAcquisition.setChecked(False)
             msg = QMessageBox()
             msg.setText("Please choose base saving directory first")
+            msg.exec_()
+            return
+        if self.well_selected == False:
+            self.btn_startAcquisition.setChecked(False)
+            msg = QMessageBox()
+            msg.setText("Please select a well to scan first")
+            msg.exec_()
+            return
+        if not self.list_configurations.selectedItems(): # no channel selected
+            self.btn_startAcquisition.setChecked(False)
+            msg = QMessageBox()
+            msg.setText("Please select at least 1 imaging channel first")
             msg.exec_()
             return
         if pressed:
@@ -1693,6 +1775,7 @@ class MultiPointWidget(QFrame):
             self.multipointController.set_NY(self.entry_NY.value())
             self.multipointController.set_NZ(self.entry_NZ.value())
             self.multipointController.set_Nt(self.entry_Nt.value())
+            self.signal_Nx_Ny_Nz.emit(self.entry_NX.value(), self.entry_NY.value(), self.entry_NZ.value())
             self.multipointController.set_af_flag(self.checkbox_withAutofocus.isChecked())
             self.multipointController.set_reflection_af_flag(self.checkbox_withReflectionAutofocus.isChecked())
             self.multipointController.set_base_path(self.lineEdit_savingDir.text())
@@ -1704,6 +1787,10 @@ class MultiPointWidget(QFrame):
     def acquisition_is_finished(self):
         self.btn_startAcquisition.setChecked(False)
         self.setEnabled_all(True)
+
+    def displayStitcherWidget(self, checked):
+        # This signal will be connected to a slot in the main GUI that will handle the display logic.
+        self.signal_display_stitcher_widget.emit(checked)
 
     def setEnabled_all(self,enabled,exclude_btn_startAcquisition=True):
         self.btn_setSavingDir.setEnabled(enabled)
@@ -1721,6 +1808,7 @@ class MultiPointWidget(QFrame):
         self.checkbox_withAutofocus.setEnabled(enabled)
         self.checkbox_withReflectionAutofocus.setEnabled(enabled)
         self.checkbox_genFocusMap.setEnabled(enabled)
+        self.checkbox_stitchOutput.setEnabled(enabled)
         if exclude_btn_startAcquisition is not True:
             self.btn_startAcquisition.setEnabled(enabled)
 
@@ -1730,6 +1818,7 @@ class MultiPointWidget(QFrame):
     def enable_the_start_aquisition_button(self):
         self.btn_startAcquisition.setEnabled(True)
 
+
 class MultiPointWidget2(QFrame):
     def __init__(self, navigationController, navigationViewer, multipointController, configurationManager = None, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1738,6 +1827,7 @@ class MultiPointWidget2(QFrame):
         self.configurationManager = configurationManager
         self.navigationController = navigationController
         self.navigationViewer = navigationViewer
+        # self.wellSelectionWidget 
         self.base_path_is_set = False
         self.location_list = np.empty((0, 3), dtype=float)
         self.add_components()
@@ -1842,6 +1932,8 @@ class MultiPointWidget2(QFrame):
         self.checkbox_withReflectionAutofocus = QCheckBox('Reflection AF')
         self.checkbox_withReflectionAutofocus.setChecked(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
         self.multipointController.set_reflection_af_flag(MULTIPOINT_REFLECTION_AUTOFOCUS_ENABLE_BY_DEFAULT)
+        self.checkbox_stitchOutput = QCheckBox('Stitch Output')
+        self.checkbox_stitchOutput.setChecked(False)
         self.btn_startAcquisition = QPushButton('Start Acquisition')
         self.btn_startAcquisition.setCheckable(True)
         self.btn_startAcquisition.setChecked(False)
@@ -1926,8 +2018,9 @@ class MultiPointWidget2(QFrame):
         self.checkbox_withAutofocus.stateChanged.connect(self.multipointController.set_af_flag)
         self.checkbox_withReflectionAutofocus.stateChanged.connect(self.multipointController.set_reflection_af_flag)
         self.btn_setSavingDir.clicked.connect(self.set_saving_dir)
+
         self.btn_startAcquisition.clicked.connect(self.toggle_acquisition)
-        self.multipointController.acquisitionFinished.connect(self.acquisition_is_finished)
+        self.multipointController.acquisition_finished.connect(self.acquisition_is_finished)
 
         self.btn_add.clicked.connect(self.add_location)
         self.btn_remove.clicked.connect(self.remove_location)
@@ -1975,6 +2068,7 @@ class MultiPointWidget2(QFrame):
             msg.setText("Please choose base saving directory first")
             msg.exec_()
             return
+
         if pressed:
             # @@@ to do: add a widgetManger to enable and disable widget 
             # @@@ to do: emit signal to widgetManager to disable other widgets
@@ -2050,6 +2144,7 @@ class MultiPointWidget2(QFrame):
         self.list_configurations.setEnabled(enabled)
         self.checkbox_withAutofocus.setEnabled(enabled)
         self.checkbox_withReflectionAutofocus.setEnabled(enabled)
+        self.checkbox_stitchOutput.setEnabled(enabled)
         if exclude_btn_startAcquisition is not True:
             self.btn_startAcquisition.setEnabled(enabled)
 
@@ -2177,6 +2272,395 @@ class MultiPointWidget2(QFrame):
             print(self.location_list)
 
 
+class StitcherWidget(QFrame):
+
+    def __init__(self, configurationManager, *args, **kwargs): #multiPointWidget, multiPointWidget2,*args, **kwargs):
+        super(StitcherWidget, self).__init__(*args, **kwargs)
+        self.configurationManager = configurationManager
+        #self.multiPointWidget = multiPointWidget
+        #self.multiPointWidget2 = self.MultiPointWidget2
+        self.output_path = ""
+        self.contrast_limits = None
+
+        self.setFrameStyle(QFrame.Panel | QFrame.Raised)  # Set frame style
+        #self.layout = QGridLayout(self)  # Initialize layout with self as the parent
+        self.layout = QVBoxLayout(self)
+        self.topLayout = QHBoxLayout()
+        self.colLayout1 = QVBoxLayout()
+        self.colLayout2 = QVBoxLayout()
+
+
+        # Apply flatfield correction checkbox
+        self.applyFlatfieldCheck = QCheckBox("Apply Flatfield Correction")
+        self.colLayout2.addWidget(self.applyFlatfieldCheck)
+
+        # Output format dropdown
+        self.outputFormatLabel = QLabel('Select Output Format:', self)
+        self.outputFormatCombo = QComboBox(self)
+        self.outputFormatCombo.addItem("OME-ZARR")
+        self.outputFormatCombo.addItem("OME-TIFF")
+        self.colLayout1.addWidget(self.outputFormatLabel)
+        self.colLayout1.addWidget(self.outputFormatCombo)
+
+        # Use registration checkbox
+        self.useRegistrationCheck = QCheckBox("Use Registration")
+        self.useRegistrationCheck.toggled.connect(self.onRegistrationCheck)
+        self.colLayout2.addWidget(self.useRegistrationCheck)
+
+        # Select Registartion Channel
+        self.registrationChannelLabel = QLabel("Select Registration Channel:", self)
+        self.registrationChannelLabel.setVisible(False)
+        self.colLayout2.addWidget(self.registrationChannelLabel)
+        self.registrationChannelCombo = QComboBox(self)
+        #self.registrationChannelCombo.setEnabled(False)
+        self.registrationChannelLabel.setVisible(False)
+        self.registrationChannelCombo.setVisible(False)
+        #for microscope_configuration in self.configurationManager.configurations:
+        #    self.registrationChannelCombo.addItems([microscope_configuration.name])
+        self.colLayout2.addWidget(self.registrationChannelCombo)
+        ### todo: make sure selected channel is one of the selected modes (check if in multipointcontroller channels selected)
+        
+        self.topLayout.addLayout(self.colLayout1)
+        self.topLayout.addLayout(self.colLayout2)
+        self.layout.addLayout(self.topLayout)
+
+        # Button to view output in Napari
+        self.viewOutputButton = QPushButton("View Output in Napari")
+        self.viewOutputButton.setEnabled(False)  # Initially disabled
+        self.viewOutputButton.setVisible(False)
+        self.viewOutputButton.clicked.connect(self.viewOutputNapari)
+        self.layout.addWidget(self.viewOutputButton)
+
+        # Progress bar
+        self.progressBar = QProgressBar()
+        self.layout.addWidget(self.progressBar)
+        self.progressBar.setVisible(False)  # Initially hidden
+
+        # Status label
+        self.statusLabel = QLabel("Status: Image Acquisition")
+        self.layout.addWidget(self.statusLabel)
+        self.statusLabel.setVisible(False)
+
+    def onRegistrationCheck(self, checked):
+        #self.registrationChannelCombo.setEnabled(checked)
+        self.registrationChannelLabel.setVisible(checked)
+        self.registrationChannelCombo.setVisible(checked)
+        if checked:
+            self.colLayout2.removeWidget(self.applyFlatfieldCheck)
+            self.colLayout1.insertWidget(0, self.applyFlatfieldCheck)
+        else:
+            self.colLayout1.removeWidget(self.applyFlatfieldCheck)
+            self.colLayout2.insertWidget(0, self.applyFlatfieldCheck)
+
+    def updateRegistrationChannels(self, selected_channels):
+        self.registrationChannelCombo.clear()  # Clear existing items
+        self.registrationChannelCombo.addItems(selected_channels)
+
+    def gettingFlatfields(self):
+        self.statusLabel.setText('Status: Calculating Flatfield Images...')
+        self.viewOutputButton.setVisible(False)
+        self.viewOutputButton.setStyleSheet("")
+        self.progressBar.setValue(0)
+        self.statusLabel.setVisible(True)
+        self.progressBar.setVisible(True)
+
+    def startingStitching(self):
+        self.statusLabel.setText('Status: Stitching Acquisition Images...')
+        self.viewOutputButton.setVisible(False)
+        self.progressBar.setValue(0)
+        self.statusLabel.setVisible(True)
+        self.progressBar.setVisible(True)
+
+    def updateProgressBar(self, value, total):
+        print(f"Stitching Progress: {value}/{total}")
+        self.progressBar.setMaximum(total)
+        self.progressBar.setValue(value)
+        self.progressBar.setVisible(True)
+
+    def startingSaving(self):
+        self.statusLabel.setText('Status: Saving Stitched Image...')
+        self.progressBar.setRange(0, 0)  # indeterminate mode.
+        self.statusLabel.setVisible(True)
+        self.progressBar.setVisible(True)
+
+    def finishedSaving(self, output_path, dtype):
+        self.statusLabel.setVisible(False)
+        self.progressBar.setVisible(False)
+        self.viewOutputButton.setVisible(True)
+        self.viewOutputButton.setStyleSheet("background-color: #C2C2FF")
+        self.viewOutputButton.setEnabled(True)
+        try: 
+            self.viewOutputButton.clicked.disconnect()
+        except TypeError:
+            pass
+        self.viewOutputButton.clicked.connect(self.viewOutputNapari)
+
+        if dtype == np.uint16:
+            contrast_limits = [0, 65535]
+        elif dtype == np.uint8:
+            contrast_limits = [0, 255]
+        else:
+            contrast_limits = None
+
+        self.output_path = output_path
+        self.contrast_limits = contrast_limits
+        print("Stitching completed.")
+        print(output_path)
+        print(dtype)
+
+    def viewOutputNapari(self):
+        try:
+            napari_viewer = napari.Viewer()
+            if ".ome.zarr" in self.output_path:
+                napari_viewer.open(self.output_path, plugin='napari-ome-zarr', contrast_limits=self.contrast_limits)
+            else:
+                napari_viewer.open(self.output_path, contrast_limits=self.contrast_limits)
+
+            colors = ['gray', 'cyan', 'magma', 'green', 'red', 'blue', 'magenta', 'yellow',
+                      'bop orange', 'bop blue', 'gray', 'magma', 'viridis', 'inferno'] #etc
+            for i, layer in enumerate(napari_viewer.layers):
+                #layer.contrast_limits = self.contrast_limits
+                layer.colormap = colors[i]
+            # napari.run()  # Start the Napari event loop
+        except Exception as e:
+            QMessageBox.critical(self, "Error Opening in Napari", str(e))
+
+
+class StitchingPreviewWidget(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.canvases = {}  # Stores the canvas for each z-plane and channel
+        self.canvasInitialized = False
+        self.image_width = 0
+        self.image_height = 0 
+        self.Nz = 1
+        self.Ny = 1
+        self.Nx = 1
+        self.channels = []
+        self.dtype = np.uint8
+        self.zoom = 1.0
+        self.centerY = 0
+        self.centerX = 0
+        self.initUI()
+
+    def initUI(self):
+        self.layout = QHBoxLayout(self)
+
+        class ImageLabel(QLabel):
+            mouseCoordinates = Signal(float, float)
+            centerCoordinates = Signal(float, float)
+
+            def __init__(self, title="", parent=None):
+                super().__init__(parent)
+                self.setText(title)
+                self.setAlignment(Qt.AlignCenter)
+                self.setMouseTracking(True)
+
+            def mouseMoveEvent(self, event):
+                canvasX, canvasY = self.displayToCanvasCoordinates(event.x(), event.y())
+                if canvasX is not None and canvasY is not None:
+                    self.mouseCoordinates.emit(canvasX, canvasY)
+
+            def mouseDoubleClickEvent(self, event):
+                canvasX, canvasY = self.displayToCanvasCoordinates(event.x(), event.y())
+                if canvasX is not None and canvasY is not None:
+                    self.centerCoordinates.emit(canvasX, canvasY)
+
+            def displayToCanvasCoordinates(self, displayX, displayY):
+                parent = self.parent()
+                pixmap = self.pixmap()
+
+                # Ensure the pixmap is valid
+                if pixmap is None or pixmap.isNull():
+                    return None, None
+
+                # Calculate the expected display size of the image based on zoom
+                displayedImageWidth = parent.image_width * parent.zoom
+                displayedImageHeight = parent.image_height * parent.zoom
+
+                # Calculate the offset of the displayed image within the label
+                offsetX = (self.width() - displayedImageWidth) / 2
+                offsetY = (self.height() - displayedImageHeight) / 2
+
+                # Adjust the event coordinates based on the offset and zoom scale
+                adjustedX = (displayX - offsetX) / parent.zoom
+                adjustedY = (displayY - offsetY) / parent.zoom
+
+                # Convert the adjusted coordinates back to canvas coordinates
+                # This involves considering the current centering relative to the original dimensions
+                canvasX = adjustedX + (parent.centerX - (parent.image_width / 2))
+                canvasY = adjustedY + (parent.centerY - (parent.image_height / 2))
+
+                return canvasX, canvasY
+
+        #self.imageLabel = QLabel("Stitching Preview")
+        self.imageLabel = ImageLabel("Stitching Preview", self)
+        self.coordinatesLabel = QLabel("Coordinates\n(n/a, n/a)")
+        self.coordinatesLabel.setAlignment(Qt.AlignCenter)
+        self.zoomInButton = QPushButton("Zoom In", self)
+        self.zoomOutButton = QPushButton("Zoom Out", self)
+        self.zoomResetButton = QPushButton("Reset Zoom", self)
+        
+        # zoomLayout = QHBoxLayout()
+        # zoomLayout.addWidget(self.zoomInButton)
+        # zoomLayout.addWidget(self.zoomOutButton)
+        # zoomLayout.addWidget(self.zoomResetButton)
+
+        self.zPlaneDropdownLabel = QLabel("Z-Plane:")
+        self.zPlaneDropdownLabel.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        self.zPlaneDropdown = QComboBox()
+        self.zPlaneDropdown.addItem("0")
+        self.zPlaneDropdown.setEnabled(False)
+        self.channelDropdownLabel = QLabel("Channel:")
+        self.channelDropdownLabel.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        self.channelDropdown = QComboBox()
+        self.channelDropdown.setEnabled(False)
+        self.zPlaneDropdown.currentIndexChanged.connect(self.displayCurrentCanvas)
+        self.channelDropdown.currentIndexChanged.connect(self.displayCurrentCanvas)
+
+        self.coordXInput = QLineEdit(self)
+        self.coordYInput = QLineEdit(self)
+        self.centerButton = QPushButton("Center Image", self)
+
+        dropdownsLayout = QVBoxLayout()
+        
+        line1 = QHBoxLayout()
+        line1.addWidget(self.zPlaneDropdownLabel)
+        line1.addWidget(self.zPlaneDropdown)
+        line2 = QHBoxLayout()
+        line2.addWidget(self.channelDropdownLabel)
+        line2.addWidget(self.channelDropdown)
+        
+        dropdownsLayout.addLayout(line1)
+        dropdownsLayout.addLayout(line2)
+        dropdownsLayout.addWidget(self.coordinatesLabel)
+        #dropdownsLayout.addLayout(zoomLayout)
+        line4 = QHBoxLayout()
+        line4.addWidget(self.zoomInButton)
+        line4.addWidget(self.zoomOutButton)
+        dropdownsLayout.addLayout(line4)
+        dropdownsLayout.addWidget(self.zoomResetButton)
+
+
+        # Layout for coordinate inputs
+        line6 = QHBoxLayout()
+        line6.addWidget(QLabel("Center X:"))
+        line6.addWidget(self.coordXInput)
+        dropdownsLayout.addLayout(line6)
+        line7 = QHBoxLayout()
+        line7.addWidget(QLabel("Center Y:"))
+        line7.addWidget(self.coordYInput)
+        dropdownsLayout.addLayout(line7)
+        dropdownsLayout.addWidget(self.centerButton)
+
+        dropdownsContainer = QWidget()
+        dropdownsContainer.setLayout(dropdownsLayout)
+        dropdownsContainer.setFixedWidth(180)
+        dropdownsContainer.setStyleSheet("background-color: #F0F0F0")
+
+        self.layout.addWidget(self.imageLabel, 8)
+        self.layout.addWidget(dropdownsContainer, 1)
+
+        self.imageLabel.mouseCoordinates.connect(self.displayMouseCoordinates)
+        self.centerButton.clicked.connect(self.centerPreview)
+        self.imageLabel.centerCoordinates.connect(self.centerPreview)
+        self.zoomInButton.clicked.connect(lambda: self.adjustZoom(1.25))
+        self.zoomOutButton.clicked.connect(lambda: self.adjustZoom(0.8))
+        self.zoomResetButton.clicked.connect(lambda: self.setZoom(1.0))
+
+    def displayMouseCoordinates(self, x, y):
+        # This method updates the coordinates label with the mouse position
+        if x >= 0 and y >= 0:  # Valid coordinates
+            self.coordinatesLabel.setText(f"Coordinates\n({x:.0f}, {y:.0f}, {self.currentZPlane()})")
+        else:
+            self.coordinatesLabel.setText("Coordinates\n(n/a, n/a)")
+
+    def adjustZoom(self, factor):
+        self.zoom *= factor
+        self.imageLabel.setZoomFactor(self.zoom)
+
+    def setZoom(self, factor):
+        self.zoom = factor
+        self.imageLabel.setZoomFactor(self.zoom)
+
+    def updateChannels(self, channels):
+        self.channels = channels
+        self.channelDropdown.clear()
+        for channel in channels:
+            self.channelDropdown.addItem(channel)
+    
+    def setZLevels(self, Nx, Ny, Nz):
+        self.Nx = Nx
+        self.Ny = Ny
+        self.Nz = Nz
+        self.zPlaneDropdown.clear()
+        for z in range(Nz):
+            self.zPlaneDropdown.addItem(f"{z}")
+
+    def initPreview(self, image_height, image_width, image_dtype):
+        self.image_width = image_width
+        self.image_height = image_height
+        self.dtype = np.dtype(image_dtype)
+        self.channelDropdown.setEnabled(True)
+        self.zPlaneDropdown.setEnabled(True)
+        for z in range(self.Nz):
+            for channel in self.channels:
+                canvasKey = (z, channel)
+                self.canvases[canvasKey] = np.zeros((image_height * self.Ny, image_width * self.Nx), 
+                                                     dtype=np.dtype(image_dtype))
+        self.displayCurrentCanvas()
+        self.canvasInitialized=True
+
+    def updatePreview(self, image, i, j, k, channel):
+        print("image shape", image.shape)
+        canvasKey = (k, channel)
+        if canvasKey not in self.canvases:
+            self.canvases[canvasKey] = np.zeros((self.imageHeight * self.Ny, self.imageWidth * self.Nx, 3), dtype=self.dtype)
+        
+        y_start = i * self.image_height
+        x_start = j * self.image_width
+        self.canvases[canvasKey][y_start:y_start + image.shape[0], x_start:x_start + image.shape[1]] = image
+        self.displayCurrentCanvas()
+
+    def centerPreview(self, centerX, centerY):
+        self.centerX = centerX
+        self.centerY = centerY
+        self.displayCurrentCanvas()
+
+    def displayCurrentCanvas(self):
+        zPlane = self.currentZPlane()
+        print("current z", zPlane)
+        channel = self.currentChannel()
+        print("current channel", channel)
+        canvasKey = (zPlane, channel)
+
+        if canvasKey in self.canvases:
+            canvas = self.canvases[canvasKey]
+            print("canvas shape", canvas.shape)
+            if self.dtype == np.uint8:
+                qformat = QImage.Format_Grayscale8
+                bytes_per_line = canvas.shape[1] * 1
+            elif self.dtype == np.uint16:
+                qformat = QImage.Format_Grayscale16
+                bytes_per_line = canvas.shape[1] * 2
+            else:
+                raise ValueError("Unsupported image data type")
+            qImage = QImage(canvas.data, canvas.shape[1], canvas.shape[0], bytes_per_line, qformat)
+            pixmap = QPixmap.fromImage(qImage)
+            ## apply logic to center image based on centerX and centerY
+            scaledPixmap = pixmap.scaled(int(self.imageLabel.width() * self.zoom), int(self.imageLabel.height() * self.zoom), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            ## shift by scaled amount on window so that the correct canvasX,Y is centered
+            self.imageLabel.setPixmap(scaledPixmap)
+
+    def resizeEvent(self, event):
+        self.displayCurrentCanvas()  # Update the display to fit the new size
+        super().resizeEvent(event)
+
+    def currentZPlane(self):
+        return self.zPlaneDropdown.currentIndex()
+
+    def currentChannel(self):
+        return self.channelDropdown.currentText()
 
 class TrackingControllerWidget(QFrame):
     def __init__(self, trackingController, configurationManager, show_configurations = True, main=None, *args, **kwargs):
@@ -2405,6 +2889,7 @@ class TrackingControllerWidget(QFrame):
             self.btn_startAcquisition.setEnabled(enabled)
     '''
 
+
 class PlateReaderAcquisitionWidget(QFrame):
     def __init__(self, plateReadingController, configurationManager = None, show_configurations = True, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2489,7 +2974,7 @@ class PlateReaderAcquisitionWidget(QFrame):
         self.checkbox_withAutofocus.stateChanged.connect(self.plateReadingController.set_af_flag)
         self.btn_setSavingDir.clicked.connect(self.set_saving_dir)
         self.btn_startAcquisition.clicked.connect(self.toggle_acquisition)
-        self.plateReadingController.acquisitionFinished.connect(self.acquisition_is_finished)
+        self.plateReadingController.acquisition_finished.connect(self.acquisition_is_finished)
 
     def set_saving_dir(self):
         dialog = QFileDialog()
@@ -2535,6 +3020,7 @@ class PlateReaderAcquisitionWidget(QFrame):
     def slot_homing_complete(self):
         self.btn_startAcquisition.setEnabled(True)
     
+
 class PlateReaderNavigationWidget(QFrame):
     def __init__(self, plateReaderNavigationController, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2672,6 +3158,7 @@ class TriggerControlWidget(QFrame):
         self.signal_trigger_fps.emit(fps)
         self.microcontroller2.set_camera_trigger_frequency(self.fps_trigger)
 
+
 class MultiCameraRecordingWidget(QFrame):
     def __init__(self, streamHandler, imageSaver, channels, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2784,6 +3271,7 @@ class MultiCameraRecordingWidget(QFrame):
             self.streamHandler[channel].stop_recording()
         self.btn_setSavingDir.setEnabled(True)
 
+
 class WaveformDisplay(QFrame):
 
     def __init__(self, N=1000, include_x=True, include_y=True, main=None, *args, **kwargs):
@@ -2817,6 +3305,7 @@ class WaveformDisplay(QFrame):
         self.plotWidget['X'].update_N(N)
         self.plotWidget['Y'].update_N(N)
 
+
 class PlotWidget(pg.GraphicsLayoutWidget):
     
     def __init__(self, title='', N = 1000, parent=None,add_legend=False):
@@ -2831,6 +3320,7 @@ class PlotWidget(pg.GraphicsLayoutWidget):
 
     def update_N(self,N):
         self.N = N
+
 
 class DisplacementMeasurementWidget(QFrame):
     def __init__(self, displacementMeasurementController, waveformDisplay, main=None, *args, **kwargs):
@@ -2941,6 +3431,7 @@ class DisplacementMeasurementWidget(QFrame):
         self.reading_x.setText("{:.2f}".format(readings[0]))
         self.reading_y.setText("{:.2f}".format(readings[1]))
 
+
 class LaserAutofocusControlWidget(QFrame):
     def __init__(self, laserAutofocusController, main=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -3019,8 +3510,8 @@ class LaserAutofocusControlWidget(QFrame):
 
 class WellSelectionWidget(QTableWidget):
 
-    signal_wellSelected = Signal(int,int,float)
-    signal_wellSelectedPos = Signal(float,float)
+    signal_well_selected = Signal(bool)
+    signal_well_selected_pos = Signal(float,float)
 
     def __init__(self, format_, *args):
 
@@ -3126,15 +3617,25 @@ class WellSelectionWidget(QTableWidget):
         if (row >= 0 + NUMBER_OF_SKIP and row <= self.rows-1-NUMBER_OF_SKIP ) and ( col >= 0 + NUMBER_OF_SKIP and col <= self.columns-1-NUMBER_OF_SKIP ):
             x_mm = X_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_X_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + col*WELL_SPACING_MM + A1_X_MM + WELLPLATE_OFFSET_X_mm
             y_mm = Y_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_Y_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + row*WELL_SPACING_MM + A1_Y_MM + WELLPLATE_OFFSET_Y_mm
-            self.signal_wellSelectedPos.emit(x_mm,y_mm)
+            self.signal_well_selected.emit(True)
+            self.signal_well_selected_pos.emit(x_mm,y_mm)
+
         # print('(' + str(row) + ',' + str(col) + ') doubleclicked')
 
     def onSingleClick(self,row,col):
         # self.get_selected_cells()
-        pass
+        if (row >= 0 + NUMBER_OF_SKIP and row <= self.rows-1-NUMBER_OF_SKIP ) and ( col >= 0 + NUMBER_OF_SKIP and col <= self.columns-1-NUMBER_OF_SKIP ):
+            x_mm = X_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_X_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + col*WELL_SPACING_MM + A1_X_MM + WELLPLATE_OFFSET_X_mm
+            y_mm = Y_MM_384_WELLPLATE_UPPERLEFT + WELL_SIZE_MM_384_WELLPLATE/2 - (A1_Y_MM_384_WELLPLATE+WELL_SPACING_MM_384_WELLPLATE*NUMBER_OF_SKIP_384) + row*WELL_SPACING_MM + A1_Y_MM + WELLPLATE_OFFSET_Y_mm
+            self.signal_well_selected.emit(True)
+            # self.signal_well_selected_pos.emit(x_mm,y_mm)
 
     def get_selected_cells(self):
         list_of_selected_cells = []
         for index in self.selectedIndexes():
              list_of_selected_cells.append((index.row(),index.column()))
+        if not list_of_selected_cells:
+            self.signal_well_selected.emit(False)
+        else:
+            self.signal_well_selected.emit(True)
         return(list_of_selected_cells)

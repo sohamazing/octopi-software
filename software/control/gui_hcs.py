@@ -45,11 +45,8 @@ elif FOCUS_CAMERA_TYPE == "FLIR":
 else:
     import control.camera as camera_fc
 
-
-
 import control.core as core
 import control.microcontroller as microcontroller
-
 import control.serial_peripherals as serial_peripherals
 
 if SUPPORT_LASER_AUTOFOCUS:
@@ -327,6 +324,8 @@ class OctopiGUI(QMainWindow):
             self.trackingControlWidget = widgets.TrackingControllerWidget(self.trackingController,self.configurationManager,show_configurations=TRACKING_SHOW_MICROSCOPE_CONFIGURATIONS)
         self.multiPointWidget = widgets.MultiPointWidget(self.multipointController,self.configurationManager)
         self.multiPointWidget2 = widgets.MultiPointWidget2(self.navigationController,self.navigationViewer,self.multipointController,self.configurationManager)
+        self.stitcherWidget = widgets.StitcherWidget(self.configurationManager)
+        self.stitchingPreviewWidget = widgets.StitchingPreviewWidget()
 
         self.recordTabWidget = QTabWidget()
         if ENABLE_TRACKING:
@@ -350,6 +349,7 @@ class OctopiGUI(QMainWindow):
             layout.addWidget(self.dacControlWidget)
         layout.addWidget(self.autofocusWidget)
         layout.addWidget(self.recordTabWidget)
+        #layout.addWidget(self.stitcherWidget)
         layout.addWidget(self.navigationViewer)
         layout.addStretch()
 
@@ -368,7 +368,9 @@ class OctopiGUI(QMainWindow):
             dock_display.setStretch(x=100,y=100)
             dock_wellSelection = dock.Dock('Well Selector', autoOrientation = False)
             dock_wellSelection.showTitleBar()
-            dock_wellSelection.addWidget(self.wellSelectionWidget)
+            dock_wellSelection.addWidget(self.wellSelectionWidget, 0 , 0)
+            #dock_wellSelection.addWidget(self.navigationViewer, 0, 1)
+            #dock_wellSelection.addWidget(self.stitchingPreviewWidget, 0, 1)
             dock_wellSelection.setFixedHeight(dock_wellSelection.minimumSizeHint().height())
             dock_controlPanel = dock.Dock('Controls', autoOrientation = False)
             # dock_controlPanel.showTitleBar()
@@ -423,6 +425,11 @@ class OctopiGUI(QMainWindow):
         self.multipointController.image_to_display.connect(self.imageDisplayWindow.display_image)
         self.multipointController.signal_current_configuration.connect(self.liveControlWidget.set_microscope_mode)
         self.multipointController.image_to_display_multi.connect(self.imageArrayDisplayWindow.display_image)
+        self.multipointController.signal_stitcher.connect(self.startStitcher)
+        self.multiPointWidget.signal_display_stitcher_widget.connect(self.toggleStitcherWidget)
+        self.multiPointWidget.signal_channel_selected.connect(self.stitcherWidget.updateRegistrationChannels) # change enabled registration channels
+        self.multiPointWidget.signal_channel_selected.connect(self.stitchingPreviewWidget.updateChannels)
+        self.multiPointWidget.signal_Nx_Ny_Nz.connect(self.stitchingPreviewWidget.setZLevels)
 
         self.liveControlWidget.signal_newExposureTime.connect(self.cameraSettingWidget.set_exposure_time)
         self.liveControlWidget.signal_newAnalogGain.connect(self.cameraSettingWidget.set_analog_gain)
@@ -439,9 +446,12 @@ class OctopiGUI(QMainWindow):
         # display the FOV in the viewer
         self.navigationController.xyPos.connect(self.navigationViewer.update_current_location)
         self.multipointController.signal_register_current_fov.connect(self.navigationViewer.register_fov)
+        self.multipointController.stitching_preview_init.connect(self.stitchingPreviewWidget.initPreview)
+        self.multipointController.stitching_preview_update.connect(self.stitchingPreviewWidget.updatePreview)
 
         # (double) click to move to a well
-        self.wellSelectionWidget.signal_wellSelectedPos.connect(self.navigationController.move_to)
+        self.wellSelectionWidget.signal_well_selected_pos.connect(self.navigationController.move_to)
+        self.wellSelectionWidget.signal_well_selected.connect(self.multiPointWidget.set_well_selected)
 
         # camera
         self.camera.set_callback(self.streamHandler.on_new_frame)
@@ -509,6 +519,7 @@ class OctopiGUI(QMainWindow):
 
             # self.imageDisplayWindow_focus.widget
             self.imageDisplayTabs.addTab(laserfocus_dockArea,"Laser-based Focus")
+            self.imageDisplayTabs.addTab(self.stitchingPreviewWidget, "Stitching Preview")
 
             # connections
             self.liveControlWidget_focus_camera.signal_newExposureTime.connect(self.cameraSettingWidget_focus_camera.set_exposure_time)
@@ -526,6 +537,37 @@ class OctopiGUI(QMainWindow):
         self.imageDisplayWindow.image_click_coordinates.connect(self.navigationController.move_from_click)
 
         self.navigationController.move_to_cached_position()
+
+    def toggleStitcherWidget(self, checked):
+        central_layout = self.centralWidget.layout()
+        if checked:
+            central_layout.insertWidget(central_layout.count() - 2, self.stitcherWidget)
+            self.stitcherWidget.show()
+        else:
+            central_layout.removeWidget(self.stitcherWidget)
+            self.stitcherWidget.hide()
+            self.stitcherWidget.setParent(None)
+
+    def startStitcher(self, acquisition_path):
+        # Fetch settings from StitcherWidget controls
+        apply_flatfield = self.stitcherWidget.applyFlatfieldCheck.isChecked()
+        use_registration = self.stitcherWidget.useRegistrationCheck.isChecked()
+        registration_channel = self.stitcherWidget.registrationChannelCombo.currentText()
+        output_name = self.multiPointWidget.lineEdit_experimentID.text()
+        output_format = ".ome.zarr" if self.stitcherWidget.outputFormatCombo.currentText() == "OME-ZARR" else ".ome.tiff"
+      
+
+        self.stitcherThread = core.Stitcher(input_folder=acquisition_path, output_name=output_name, output_format=output_format, 
+                                       apply_flatfield=apply_flatfield, use_registration=use_registration, registration_channel=registration_channel)
+        
+        # Connect signals to slots
+        self.stitcherThread.update_progress.connect(self.stitcherWidget.updateProgressBar)
+        self.stitcherThread.getting_flatfields.connect(self.stitcherWidget.gettingFlatfields)
+        self.stitcherThread.starting_stitching.connect(self.stitcherWidget.startingStitching)
+        self.stitcherThread.starting_saving.connect(self.stitcherWidget.startingSaving)
+        self.stitcherThread.finished_saving.connect(self.stitcherWidget.finishedSaving)        
+        # Start the thread
+        self.stitcherThread.start()
 
     def closeEvent(self, event):
 
